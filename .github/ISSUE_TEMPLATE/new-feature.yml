@@ -1,0 +1,41 @@
+name: "Feature proposal"
+description: Propose a feature or improvement for BeefMC.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose an improvement for BeefMC. Describe the need, affected Minecraft versions, and alternatives.
+        Check existing BeefMC discussions and issues before opening a new one.
+
+  - type: textarea
+    attributes:
+      label: Need or problem
+      description: Explain the context and purpose of this proposal.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: Describe the desired behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      description: Describe alternatives already tried or considered.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add useful context or a screenshot if needed.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        This proposal is for BeefMC. Keep all changes in this repository.

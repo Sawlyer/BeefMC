@@ -1,0 +1,86 @@
+schema_version: 1
+versions:
+  - minecraft: "1.8.8"
+    branch: version/1.8.8
+    upstream:
+      repository: hpfxd/PandaSpigot
+      ref: master
+      commit: 1afa5656056df41dd6fec8383927b925c729623d
+    build:
+      family: legacy
+      jdk: 17
+      runtime_java: 8
+      patch_roots:
+        - patches/api
+        - patches/server
+      apply_command: "./beefmc setup"
+      check_command: "./gradlew build --stacktrace"
+      jar_command: "./beefmc jar"
+      jar_path: "beefmc-1.8.8.jar"
+    status: build-checked
+    release:
+      tag_pattern: "v{release}"
+      asset_name: "BeefMC-1.8.8-v{release}.jar"
+  - minecraft: "1.21.11"
+    branch: version/1.21.11
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/1.21.11
+      commit: 12f438e06b8a35d6584687565ec5eeacb373972c
+    build:
+      family: modern
+      jdk: 21
+      runtime_java: 21
+      patch_roots:
+        - leaf-api/paper-patches
+        - leaf-server/paper-patches
+      apply_command: "./gradlew applyAllPatches"
+      check_command: "./gradlew build"
+      jar_command: "./gradlew :beefmc-server:createMojmapPaperclipJar"
+      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+    status: branch-ready
+    release:
+      tag_pattern: "v{release}"
+      asset_name: "BeefMC-1.21.11-v{release}.jar"
+  - minecraft: "26.1.2"
+    branch: version/26.1.2
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/26.1.2
+      commit: 3c591d7020b402fa38430cb57ffd1d29b61681a3
+    build:
+      family: modern
+      jdk: 25
+      runtime_java: 25
+      patch_roots:
+        - leaf-api/paper-patches
+        - leaf-server/paper-patches
+      apply_command: "./gradlew applyAllPatches"
+      check_command: "./gradlew build"
+      jar_command: "./gradlew :beefmc-server:createPaperclipJar"
+      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+    status: branch-ready
+    release:
+      tag_pattern: "v{release}"
+      asset_name: "BeefMC-26.1.2-v{release}.jar"
+  - minecraft: "26.3"
+    branch: main
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/26.3
+      commit: 66f99f8eb21628892b47671375884e97052ba52b
+    build:
+      family: modern
+      jdk: 25
+      runtime_java: 25
+      patch_roots:
+        - leaf-api/paper-patches
+        - leaf-server/paper-patches
+      apply_command: "./gradlew applyAllPatches"
+      check_command: "./gradlew build"
+      jar_command: "./gradlew :beefmc-server:createPaperclipJar"
+      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+    status: branch-ready
+    release:
+      tag_pattern: "v{release}"
+      asset_name: "BeefMC-26.3-v{release}.jar"

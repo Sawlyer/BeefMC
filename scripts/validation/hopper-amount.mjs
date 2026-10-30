@@ -81,6 +81,7 @@ async function reservePort() {
 
 async function startServer() {
   serverLogs.length = 0;
+  console.log(`Starting isolated server, sleeping-block-entity=${sleepingEnabled}`);
   child = spawn(javaPath, ['-Xms512M', '-Xmx512M', '-jar', 'server.jar', '--nogui'], {
     cwd: instancePath,
     windowsHide: true,
@@ -90,7 +91,7 @@ async function startServer() {
   child.stderr.setEncoding('utf8').on('data', recordLogs);
   const deadline = Date.now() + startupTimeoutMs;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error(`Server exited during startup (${child.exitCode})`);
+    if (child.exitCode !== null) throw new Error(`Server exited during startup (${child.exitCode}). Last output: ${serverLogs.slice(-30).join('\n')}`);
     if (serverLogs.some(line => line.includes('Done ('))) {
       for (let attempt = 0; attempt < 40; attempt++) {
         try {
@@ -104,7 +105,7 @@ async function startServer() {
     }
     await delay(250);
   }
-  throw new Error('Server did not reach ready state before timeout');
+  throw new Error(`Server did not reach ready state before timeout. Last output: ${serverLogs.slice(-30).join('\n')}`);
 }
 
 function recordLogs(text) {
@@ -113,15 +114,25 @@ function recordLogs(text) {
 }
 
 async function stopServer() {
-  if (!child || child.exitCode !== null) return;
-  const exited = once(child, 'exit');
+  if (!child) return;
+  if (child.exitCode !== null) {
+    child = undefined;
+    return;
+  }
+  const processToStop = child;
+  const exited = once(processToStop, 'exit');
   if (rcon) {
     await rcon.command('stop').catch(() => {});
     rcon.close();
     rcon = undefined;
+  } else {
+    processToStop.kill('SIGTERM');
   }
-  const timeout = delay(20_000).then(() => { throw new Error('Server did not stop cleanly'); });
-  await Promise.race([exited, timeout]);
+  const stopped = await Promise.race([exited.then(() => true), delay(10_000).then(() => false)]);
+  if (!stopped) {
+    processToStop.kill('SIGKILL');
+    await exited;
+  }
   child = undefined;
 }
 

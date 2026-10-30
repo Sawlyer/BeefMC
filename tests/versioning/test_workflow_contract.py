@@ -60,7 +60,10 @@ class WorkflowContractTests(unittest.TestCase):
         for family in ("legacy", "modern"):
             self.assertIn(f"build_family == '{family}'", content)
         self.assertIn("github.event.pull_request.head.repo.full_name", content)
-        self.assertNotIn("createPaperclipJar", content)
+        self.assertIn("runtime_validation", workflow["on"]["workflow_call"]["inputs"])
+        runtime_steps = [step for step in workflow["jobs"]["build"]["steps"] if "inputs.runtime_validation" in step.get("if", "")]
+        self.assertEqual(len(runtime_steps), 4)
+        self.assertTrue(any("createPaperclipJar" in step.get("run", "") for step in runtime_steps))
         self.assertNotIn("./paper ", content)
 
     def test_each_ci_family_applies_beefmc_branding_after_patch_setup(self) -> None:

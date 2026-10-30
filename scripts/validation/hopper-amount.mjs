@@ -113,11 +113,11 @@ try {
 
   await placeTestHoppers(0);
   const fullTransfer = await stepUntilTransfer(0);
-  assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Full-capacity transfer must move five items; observed ${JSON.stringify(fullTransfer)}`);
+  assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Full-capacity transfer must move five items; observed ${JSON.stringify(fullTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
 
   await placeTestHoppers(60);
   const partialTransfer = await stepUntilTransfer(60);
-  assert.deepEqual(partialTransfer, { source: 59, destination: 64 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}`);
+  assert.deepEqual(partialTransfer, { source: 59, destination: 64 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
 
   console.log(JSON.stringify({ result: 'passed', sleepingBlockEntity: sleepingEnabled, fullTransfer, partialTransfer, instancePath }, null, 2));
 } catch (error) {
@@ -237,7 +237,7 @@ async function placeTestHoppers(destinationCount) {
   await assertCommand('setblock 100 65 100 minecraft:air');
   await assertCommand('setblock 101 64 100 minecraft:stone');
   await assertCommand('setblock 100 64 100 minecraft:hopper[facing=east,enabled=true]');
-  await assertCommand('setblock 100 65 100 minecraft:chest');
+  await assertCommand('setblock 100 65 100 minecraft:barrel');
   await assertCommand('item replace block 100 65 100 container.0 with minecraft:stone 63');
   if (destinationCount > 0) {
     await assertCommand(`item replace block 100 64 100 container.0 with minecraft:stone ${destinationCount}`);

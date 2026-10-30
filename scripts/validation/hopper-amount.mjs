@@ -113,12 +113,12 @@ try {
   await assertCommand('forceload add 100 100');
 
   await placeTestHoppers(0);
-  const fullTransfer = await stepUntilTransfer();
+  const fullTransfer = await stepUntilTransfer(0);
   assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Full-capacity transfer must move five items; observed ${JSON.stringify(fullTransfer)}`);
 
   await assertCommand('tick freeze');
   await placeTestHoppers(60);
-  const partialTransfer = await stepUntilTransfer();
+  const partialTransfer = await stepUntilTransfer(60);
   assert.deepEqual(partialTransfer, { source: 59, destination: 64 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}`);
 
   console.log(JSON.stringify({ result: 'passed', sleepingBlockEntity: sleepingEnabled, fullTransfer, partialTransfer, instancePath }, null, 2));
@@ -234,29 +234,30 @@ async function assertCommand(command) {
 }
 
 async function placeTestHoppers(destinationCount) {
+  await assertCommand('setblock 100 63 100 minecraft:stone');
   await assertCommand('setblock 100 64 100 minecraft:air');
-  await assertCommand('setblock 101 64 100 minecraft:air');
-  await assertCommand('setblock 101 64 99 minecraft:stone');
+  await assertCommand('setblock 100 65 100 minecraft:air');
+  await assertCommand('setblock 101 64 100 minecraft:stone');
   await assertCommand('setblock 100 64 100 minecraft:hopper[facing=east]');
-  await assertCommand('setblock 101 64 100 minecraft:hopper[facing=north]');
-  await assertCommand('item replace block 100 64 100 container.0 with minecraft:stone 63');
+  await assertCommand('setblock 100 65 100 minecraft:chest');
+  await assertCommand('item replace block 100 65 100 container.0 with minecraft:stone 63');
   if (destinationCount > 0) {
-    await assertCommand(`item replace block 101 64 100 container.0 with minecraft:stone ${destinationCount}`);
+    await assertCommand(`item replace block 100 64 100 container.0 with minecraft:stone ${destinationCount}`);
   }
-  const source = await readCount(100, 64, 100);
-  const destination = await readCount(101, 64, 100);
+  const source = await readCount(100, 65, 100);
+  const destination = await readCount(100, 64, 100);
   assert.equal(source, 63, 'Source inventory setup failed');
   assert.equal(destination, destinationCount, 'Destination inventory setup failed');
 }
 
-async function stepUntilTransfer() {
+async function stepUntilTransfer(initialDestinationCount) {
   for (let tick = 0; tick < 24; tick++) {
     await assertCommand('tick step 1');
-    const source = await readCount(100, 64, 100);
-    const destination = await readCount(101, 64, 100);
-    if (source !== 63 || destination !== 0 && destination !== 60) return { source, destination };
+    const source = await readCount(100, 65, 100);
+    const destination = await readCount(100, 64, 100);
+    if (source !== 63 || destination !== initialDestinationCount) return { source, destination };
   }
-  throw new Error('Hopper did not transfer any items after 24 manual ticks');
+  throw new Error(`Hopper did not pull from source chest after 24 manual ticks (source=${await readCount(100, 65, 100)}, destination=${await readCount(100, 64, 100)})`);
 }
 
 async function readCount(x, y, z) {

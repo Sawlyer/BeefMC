@@ -41,15 +41,15 @@ No BeefMC-specific memory or performance gain is documented yet. Results inherit
 Mark missing measurements `Not measured`. Compare baseline and BeefMC on the same machine, workload, and configuration. Do not generalize results beyond the conditions recorded.
 ## 26.1.2 — 5-second TPS lag check (implemented, not measured)
 
-- **Status:** Implemented in patch source; patch application and build pending.
+- **Status:** Patch application and CI build passed; CPU and memory effect not measured.
 - **Date and reference:** 2026-10-30; BeefMC issue #2.
 - **Minecraft versions:** 26.1.2.
-- **Changed area:** `leaf-server/minecraft-patches/features/0315-BeefMC-Optimize-5-second-TPS-lag-check.patch`.
-- **Hypothesis:** The lagging check needs only the 5-second TPS window. Reading it directly avoids calculating the 1-minute, 5-minute, and 15-minute windows on each check.
-- **Compatibility:** No plugin API or configuration changes. Existing lock and TPS calculation are reused. Runtime and plugin behavior checks remain pending.
+- **Changed area:** `leaf-server/minecraft-patches/features/0316-BeefMC-Optimize-5-second-TPS-lag-check.patch`.
+- **Hypothesis:** Lag check reads only 5-second TPS. Dedicated helper skips 1-minute, 5-minute, and 15-minute calculations and array creation.
+- **Compatibility:** Same 5-second formula, tick interval, and lock. No plugin API or configuration change. CI applied patches and compiled target; focused runtime threshold check not run.
 - **Method:** Compile this branch and run focused lag-threshold checks. Intensive before/after profiling remains scoped to 1.21.11; no 26.1.2 profile has run.
-- **Environment:** Local Windows 11 host, 32 logical CPUs, 64 GiB RAM; branch runtime/build JDK 25. Build not yet run.
+- **Environment:** GitHub Actions, Java 25; patch application and CI build passed.
 - **Workload:** Focused tick-loop behavior check; no server workload executed for this change.
-- **Results:** Not measured. Local Gradle daemon failed before project configuration with `Unable to establish loopback connection`.
+- **Results:** Not measured. No CPU, memory, or MSPT gain claimed.
 - **Conclusion:** Not measured; no gain claim.
-- **Remaining checks:** Patch application, branch build, lag-threshold behavior, and plugin compatibility review.
+- **Remaining checks:** Focused lag-threshold behavior and before/after profile; plugin compatibility review.

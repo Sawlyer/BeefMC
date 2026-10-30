@@ -25,8 +25,7 @@ await mkdir(instancePath, { recursive: false });
 await copyFile(jarPath, path.join(instancePath, 'server.jar'));
 await writeFile(path.join(instancePath, 'eula.txt'), 'eula=true\n');
 
-const serverPort = await reservePort();
-const rconPort = await reservePort();
+const [serverPort, rconPort] = await reservePorts(2);
 await writeFile(path.join(instancePath, 'server.properties'), [
   `server-port=${serverPort}`,
   'server-ip=127.0.0.1',
@@ -70,13 +69,19 @@ try {
   await stopServer().catch(() => {});
 }
 
-async function reservePort() {
-  const server = createServer();
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  const { port } = server.address();
-  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-  return port;
+async function reservePorts(count) {
+  const servers = [];
+  try {
+    for (let index = 0; index < count; index++) {
+      const server = createServer();
+      server.listen(0, '127.0.0.1');
+      await once(server, 'listening');
+      servers.push(server);
+    }
+    return servers.map(server => server.address().port);
+  } finally {
+    await Promise.all(servers.map(server => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))));
+  }
 }
 
 async function startServer() {
@@ -93,15 +98,17 @@ async function startServer() {
   while (Date.now() < deadline) {
     if (child.exitCode !== null) throw new Error(`Server exited during startup (${child.exitCode}). Last output: ${serverLogs.slice(-30).join('\n')}`);
     if (serverLogs.some(line => line.includes('Done ('))) {
+      let lastRconError = 'no connection attempt made';
       for (let attempt = 0; attempt < 40; attempt++) {
         try {
           rcon = await Rcon.connect('127.0.0.1', rconPort, rconPassword);
           return;
-        } catch {
+        } catch (error) {
+          lastRconError = error.message;
           await delay(250);
         }
       }
-      throw new Error('Server reached ready state but RCON did not accept connections');
+      throw new Error(`Server reached ready state but RCON did not accept connections: ${lastRconError}. Last output: ${serverLogs.slice(-30).join('\n')}`);
     }
     await delay(250);
   }

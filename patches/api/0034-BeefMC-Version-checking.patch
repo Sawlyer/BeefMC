@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 23:50:22 +0100
+Subject: [PATCH] Rebrand version check as BeefMC
+
+
+diff --git a/src/main/java/org/bukkit/command/defaults/VersionCommand.java b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
+index 04195613b2c230aa5e28fb2fabc2b3f2b32ec169..76c2d6ba02183fceb9c0ecdc1bf6ed57a80ced32 100644
+--- a/src/main/java/org/bukkit/command/defaults/VersionCommand.java
++++ b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
+@@ -22,16 +22,13 @@ import java.util.HashSet;
+ import java.util.Set;
+ import java.util.concurrent.locks.ReentrantLock;
+ 
+-// PandaSpigot start
++// BeefMC start - Version checking against BeefMC 1.8.8
+ import com.google.gson.Gson;
+-import com.google.gson.JsonArray;
+ import com.google.gson.JsonObject;
+ import com.google.gson.JsonSyntaxException;
+ import java.io.InputStreamReader;
+ import java.net.HttpURLConnection;
+-import java.util.stream.StreamSupport;
+-import com.google.gson.JsonElement;
+-// PandaSpigot end
++// BeefMC end
+ 
+ public class VersionCommand extends BukkitCommand {
+     public VersionCommand(String name) {
+@@ -190,15 +187,10 @@ public class VersionCommand extends BukkitCommand {
+     private void obtainVersion() {
+         String version = Bukkit.getVersion();
+         if (version == null) version = "Custom";
+-        // PandaSpigot start
+-        if (version.startsWith("git-PandaSpigot-")) {
+-            String[] parts = version.substring("git-PandaSpigot-".length()).split("[-\\s]");
+-            int distance;
+-            try {
+-                distance = fetchDownloadApiDistance(Integer.parseInt(parts[0]));
+-            } catch (NumberFormatException e) {
+-                distance = fetchGitDistance("hpfxd/PandaSpigot", "master", parts[0]);
+-            }
++        // BeefMC start
++        if (version.startsWith("git-BeefMC-")) {
++            String[] parts = version.substring("git-BeefMC-".length()).split("[-\\s]");
++            int distance = fetchGitDistance("Sawlyer/BeefMC", "version/1.8.8", parts[0]);
+ 
+             switch (distance) {
+                 case -1:
+@@ -211,12 +203,12 @@ public class VersionCommand extends BukkitCommand {
+                     this.setVersionMessage(ChatColor.YELLOW + "Unknown version");
+                     break;
+                 default:
+-                    this.setVersionMessage(ChatColor.RED + "You are " + distance + " version(s) behind!\n" + ChatColor.RED + "Download the new version at " + ChatColor.GOLD + "https://github.com/hpfxd/PandaSpigot");
++                    this.setVersionMessage(ChatColor.RED + "You are " + distance + " version(s) behind!\n" + ChatColor.RED + "Check for BeefMC releases at " + ChatColor.GOLD + "https://github.com/Sawlyer/BeefMC/releases");
+                     break;
+             }
+         // PaperSpigot start
+         } else if (version.startsWith("git-PaperSpigot-")) {
+-        // PandaSpigot end
++        // BeefMC end
+             String[] parts = version.substring("git-PaperSpigot-".length()).split("[-\\s]");
+             int paperSpigotVersions = getDistance("paperspigot", parts[0]);
+             if (paperSpigotVersions == -1) {
+@@ -276,41 +268,13 @@ public class VersionCommand extends BukkitCommand {
+         }
+     }
+ 
+-    // PandaSpigot start
+-    private static int fetchDownloadApiDistance(int runNumber) {
+-        try {
+-            HttpURLConnection connection = (HttpURLConnection) new URL("https://downloads.hpfxd.com/v2/projects/pandaspigot/versions/1.8.8").openConnection();
+-            connection.setRequestProperty("Accept", "application/json");
+-            connection.setRequestProperty("User-Agent", "PandaSpigot/" + Bukkit.getVersion());
+-            connection.connect();
+-            if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) return -2;
+-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))) {
+-                JsonObject obj = new Gson().fromJson(reader, JsonObject.class);
+-                JsonArray arr = obj.getAsJsonArray("builds");
+-                int latest = StreamSupport.stream(arr.spliterator(), false)
+-                    .mapToInt(JsonElement::getAsInt)
+-                    .max()
+-                    .orElse(-1);
+-                if (latest < 0) {
+-                    return -1;
+-                } else {
+-                    return latest - runNumber;
+-                }
+-            } catch (JsonSyntaxException | NumberFormatException e) {
+-                e.printStackTrace();
+-                return -1;
+-            }
+-        } catch (IOException e) {
+-            e.printStackTrace();
+-            return -1;
+-        }
+-    }
++    // BeefMC start
+     private static int fetchGitDistance(String repo, String branch, String hash) {
+         hash = hash.replace("\"", "");
+         try {
+             HttpURLConnection connection = (HttpURLConnection) new URL("https://api.github.com/repos/" + repo + "/compare/" + branch + "..." + hash).openConnection();
+             connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
+-            connection.setRequestProperty("User-Agent", "PandaSpigot/" + Bukkit.getVersion());
++            connection.setRequestProperty("User-Agent", "BeefMC/" + Bukkit.getVersion());
+             connection.connect();
+             if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) return -2; // Unknown commit
+             try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))) {
+@@ -333,7 +297,7 @@ public class VersionCommand extends BukkitCommand {
+             return -1;
+         }
+     }
+-    // PandaSpigot end
++    // BeefMC end
+ 
+     private static int getDistance(String repo, String currentVerInt) { // PaperSpigot
+         try {

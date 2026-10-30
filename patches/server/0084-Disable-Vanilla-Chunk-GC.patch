@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aikar <aikar@aikar.co>
+Date: Sun, 4 Dec 2022 12:48:52 -0300
+Subject: [PATCH] Disable Vanilla Chunk GC
+
+Bukkit has its own system for this.
+
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 9ed5d90cb8fa7502d7e1218ba31fec957a8f8520..99617ff8ca93f59f67b08b9d6eca3d7b35e75c7a 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -963,6 +963,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             if (!this.pandaSpigotConfig.disableChunkSaving) { // PandaSpigot - Configurable chunk saving
+             this.chunkProvider.saveChunks(flag, iprogressupdate);
+             } // PandaSpigot
++            /* // PandaSpigot start - Disable Vanilla Chunk GC
+             // CraftBukkit - ArrayList -> Collection
+             Collection arraylist = this.chunkProviderServer.a();
+             Iterator iterator = arraylist.iterator();
+@@ -974,6 +975,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                     this.chunkProviderServer.queueUnload(chunk.locX, chunk.locZ);
+                 }
+             }
++            */ // PandaSpigot end
+ 
+         }
+     }

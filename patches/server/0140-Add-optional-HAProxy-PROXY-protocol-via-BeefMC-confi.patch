@@ -1,0 +1,322 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 19:16:03 +0100
+Subject: [PATCH] Add optional HAProxy PROXY protocol via BeefMC config
+
+
+diff --git a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
+index 5ae20fa1da2efa23557bbbee5bb4334ba108b0c4..4802cdba1a4bc9481edc04066089feb8b5873c27 100644
+--- a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
++++ b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
+@@ -10,6 +10,7 @@ import org.spongepowered.configurate.ConfigurationNode;
+ import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+ import org.spongepowered.configurate.objectmapping.ObjectMapper;
+ import org.spongepowered.configurate.objectmapping.meta.Comment;
++import org.spongepowered.configurate.objectmapping.meta.Setting;
+ import org.spongepowered.configurate.util.MapFactories;
+ import org.spongepowered.configurate.util.NamingSchemes;
+ 
+@@ -32,6 +33,16 @@ public class PandaSpigotConfig {
+      * @param file The configuration file.
+      */
+     public static void init(File file) {
++        File legacyFile = new File("pandaspigot.yml");
++        if (file.getName().equals("beefmc.yml") && !file.exists() && legacyFile.isFile()) {
++            try {
++                java.nio.file.Files.copy(legacyFile.toPath(), file.toPath());
++                Bukkit.getLogger().info("Migrated pandaspigot.yml to beefmc.yml; the original file was kept.");
++            } catch (java.io.IOException exception) {
++                throw new IllegalStateException("Could not migrate pandaspigot.yml to beefmc.yml", exception);
++            }
++        }
++
+         EOYamlConfigurationLoader loader = EOYamlConfigurationLoader.builder()
+                 .file(file)
+                 .defaultOptions(o -> o
+@@ -46,7 +57,15 @@ public class PandaSpigotConfig {
+         
+         try {
+             CommentedConfigurationNode root = loader.load();
++            boolean proxyProtocolConfigured = !root.node("proxies", "proxy-protocol").virtual();
+             config = root.get(PandaSpigotConfig.class);
++            if (!proxyProtocolConfigured) {
++                config.proxies.proxyProtocol = org.github.paperspigot.PaperSpigotConfig.config
++                        .getBoolean("proxies.proxy-protocol", false);
++            }
++            if (config.proxies.proxyProtocol) {
++                Bukkit.getLogger().warning("HAProxy PROXY protocol is enabled. Firewall the server port to trusted proxies only.");
++            }
+             
+             // worlds
+             CommentedConfigurationNode worldsNode = root.node("worlds")
+@@ -107,6 +126,15 @@ public class PandaSpigotConfig {
+         "match your proxy's online-mode setting.")
+     public boolean proxyOnlineMode = true;
+ 
++    public Proxies proxies = new Proxies();
++
++    @ConfigSerializable
++    public static class Proxies {
++        @Setting("proxy-protocol")
++        @Comment("Accept HAProxy PROXY protocol headers before the Minecraft handshake. Enable only when every connection reaches this server through a trusted proxy; the server port must be firewalled.")
++        public boolean proxyProtocol = false;
++    }
++
+     public boolean isProxyOnlineMode() {
+         return Bukkit.getOnlineMode() || (SpigotConfig.bungee && this.proxyOnlineMode);
+     }
+diff --git a/src/main/java/io/papermc/paper/network/HAProxyProtocol.java b/src/main/java/io/papermc/paper/network/HAProxyProtocol.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..63174756384567c96741f158a7603df889827ffd
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/network/HAProxyProtocol.java
+@@ -0,0 +1,42 @@
++package io.papermc.paper.network;
++
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.channel.ChannelInboundHandler;
++import io.netty.channel.ChannelInboundHandlerAdapter;
++import io.netty.handler.codec.haproxy.HAProxyCommand;
++import io.netty.handler.codec.haproxy.HAProxyMessage;
++import io.netty.handler.codec.haproxy.HAProxyProxiedProtocol;
++import io.netty.util.ReferenceCountUtil;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import java.util.function.Consumer;
++
++/** Internal handler for HAProxy PROXY protocol headers. */
++public final class HAProxyProtocol {
++
++    private HAProxyProtocol() {
++    }
++
++    public static ChannelInboundHandler newHandler(final Consumer<SocketAddress> sourceAddressConsumer) {
++        return new ChannelInboundHandlerAdapter() {
++            @Override
++            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
++                if (!(msg instanceof HAProxyMessage)) {
++                    super.channelRead(ctx, msg);
++                    return;
++                }
++
++                HAProxyMessage message = (HAProxyMessage) msg;
++                try {
++                    if (message.command() == HAProxyCommand.PROXY
++                        && (message.proxiedProtocol() == HAProxyProxiedProtocol.TCP4
++                            || message.proxiedProtocol() == HAProxyProxiedProtocol.TCP6)) {
++                        sourceAddressConsumer.accept(new InetSocketAddress(message.sourceAddress(), message.sourcePort()));
++                    }
++                } finally {
++                    ReferenceCountUtil.release(message);
++                }
++            }
++        };
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/ServerConnection.java b/src/main/java/net/minecraft/server/ServerConnection.java
+index 882bf62cc8a08e51b5d315c608194a68ae025489..caf9af7e10cc1348e466979b58e1888012134d26 100644
+--- a/src/main/java/net/minecraft/server/ServerConnection.java
++++ b/src/main/java/net/minecraft/server/ServerConnection.java
+@@ -123,6 +123,15 @@ public class ServerConnection {
+                         .addLast("prepender", PacketPrepender.INSTANCE) // PandaSpigot - Share PacketPrepender instance
+                         .addLast("encoder", new PacketEncoder(EnumProtocolDirection.CLIENTBOUND));
+                     // PandaSpigot end
++                    // BeefMC start - HAProxy PROXY protocol support
++                    if (com.hpfxd.pandaspigot.config.PandaSpigotConfig.get().proxies.proxyProtocol) {
++                        channel.pipeline().addAfter("timeout", "haproxy-decoder", new io.netty.handler.codec.haproxy.HAProxyMessageDecoder());
++                        channel.pipeline().addAfter("haproxy-decoder", "haproxy-handler", io.papermc.paper.network.HAProxyProtocol.newHandler(address -> {
++                            NetworkManager networkManager = (NetworkManager) channel.pipeline().get("packet_handler");
++                            networkManager.l = address;
++                        }));
++                    }
++                    // BeefMC end - HAProxy PROXY protocol support
+                     NetworkManager networkmanager = new NetworkManager(EnumProtocolDirection.SERVERBOUND);
+ 
+                     // PandaSpigot start
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index 4f868274e374b6db2fb27641f515aa63aa06222a..38a1025b35e0c36ebdd473db6eea655da55334c0 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -137,7 +137,7 @@ public class Main {
+                 acceptsAll(asList("beefmc-settings", "pandaspigot-settings"), "File for BeefMC settings")
+                         .withRequiredArg()
+                         .ofType(File.class)
+-                        .defaultsTo(new File("pandaspigot.yml"))
++                        .defaultsTo(new File("beefmc.yml"))
+                         .describedAs("Yml file");
+ 
+                 acceptsAll(asList("add-plugin", "add-extra-plugin-jar"), "Specify paths to extra plugin jars to be loaded in addition to those in the plugins folder. This argument can be specified multiple times, once for each extra plugin jar path.")
+diff --git a/src/test/java/io/papermc/paper/network/HAProxyProtocolTest.java b/src/test/java/io/papermc/paper/network/HAProxyProtocolTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d7cba107c31bdb2d0f24bc5e6674da4d375df55
+--- /dev/null
++++ b/src/test/java/io/papermc/paper/network/HAProxyProtocolTest.java
+@@ -0,0 +1,168 @@
++package io.papermc.paper.network;
++
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertNotNull;
++import static org.junit.Assert.fail;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.buffer.Unpooled;
++import io.netty.channel.ChannelInboundHandlerAdapter;
++import io.netty.channel.embedded.EmbeddedChannel;
++import io.netty.handler.codec.haproxy.HAProxyMessageDecoder;
++import io.netty.handler.codec.haproxy.HAProxyProtocolException;
++import io.netty.util.CharsetUtil;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.function.Consumer;
++import org.junit.Test;
++
++public class HAProxyProtocolTest {
++
++    private static final byte[] V2_SIGNATURE = new byte[] {
++        '\r', '\n', '\r', '\n', 0, '\r', '\n', 'Q', 'U', 'I', 'T', '\n'
++    };
++
++    @Test
++    public void decodesProxyV1AndReportsSourceAddress() {
++        List<SocketAddress> addresses = new ArrayList<>();
++        EmbeddedChannel channel = newChannel(addresses::add);
++
++        channel.writeInbound(Unpooled.copiedBuffer(
++            "PROXY TCP4 198.51.100.10 203.0.113.5 12345 25565\r\n", CharsetUtil.US_ASCII
++        ));
++
++        assertEquals(1, addresses.size());
++        assertEquals("198.51.100.10", ((InetSocketAddress) addresses.get(0)).getAddress().getHostAddress());
++        assertEquals(12345, ((InetSocketAddress) addresses.get(0)).getPort());
++        channel.finishAndReleaseAll();
++    }
++
++    @Test
++    public void decodesProxyV2Ipv4AndIpv6() {
++        List<SocketAddress> ipv4Addresses = new ArrayList<>();
++        EmbeddedChannel ipv4Channel = newChannel(ipv4Addresses::add);
++        ipv4Channel.writeInbound(v2Ipv4Header());
++        assertEquals(1, ipv4Addresses.size());
++        assertEquals("198.51.100.10", ((InetSocketAddress) ipv4Addresses.get(0)).getAddress().getHostAddress());
++        ipv4Channel.finishAndReleaseAll();
++
++        List<SocketAddress> ipv6Addresses = new ArrayList<>();
++        EmbeddedChannel ipv6Channel = newChannel(ipv6Addresses::add);
++        ipv6Channel.writeInbound(v2Ipv6Header());
++        assertEquals(1, ipv6Addresses.size());
++        assertEquals("2001:db8:0:0:0:0:0:10", ((InetSocketAddress) ipv6Addresses.get(0)).getAddress().getHostAddress());
++        ipv6Channel.finishAndReleaseAll();
++    }
++
++    @Test
++    public void waitsForFragmentedHeaderAndForwardsCoalescedHandshake() {
++        List<SocketAddress> addresses = new ArrayList<>();
++        List<ByteBuf> forwarded = new ArrayList<>();
++        EmbeddedChannel channel = newChannel(addresses::add, new ChannelInboundHandlerAdapter() {
++            @Override
++            public void channelRead(io.netty.channel.ChannelHandlerContext ctx, Object msg) throws Exception {
++                if (msg instanceof ByteBuf) {
++                    forwarded.add((ByteBuf) msg);
++                } else {
++                    super.channelRead(ctx, msg);
++                }
++            }
++        });
++
++        channel.writeInbound(Unpooled.copiedBuffer(
++            "PROXY TCP4 198.51.100.10 203.0.113.5 12345", CharsetUtil.US_ASCII
++        ));
++        assertTrueNoAddress(addresses);
++
++        channel.writeInbound(Unpooled.copiedBuffer(" 25565\r\n\u0000\u0001", CharsetUtil.US_ASCII));
++
++        assertEquals(1, addresses.size());
++        assertEquals(1, forwarded.size());
++        assertEquals(2, forwarded.get(0).readableBytes());
++        channel.finishAndReleaseAll();
++    }
++
++    @Test
++    public void preservesTransportAddressForLocalAndUnknownHeaders() {
++        List<SocketAddress> addresses = new ArrayList<>();
++        EmbeddedChannel channel = newChannel(addresses::add);
++
++        channel.writeInbound(v2LocalHeader());
++        channel.writeInbound(Unpooled.copiedBuffer("PROXY UNKNOWN\r\n", CharsetUtil.US_ASCII));
++
++        assertTrueNoAddress(addresses);
++        channel.finishAndReleaseAll();
++    }
++
++    @Test
++    public void rejectsMalformedHeader() {
++        EmbeddedChannel channel = newChannel(address -> fail("Malformed header must not set address"));
++        try {
++            channel.writeInbound(Unpooled.copiedBuffer("PROXY TCP4 not-an-ip 203.0.113.5 12345 25565\r\n", CharsetUtil.US_ASCII));
++            fail("Expected malformed PROXY header to be rejected");
++        } catch (HAProxyProtocolException expected) {
++            assertNotNull(expected.getCause());
++        } finally {
++            channel.finishAndReleaseAll();
++        }
++    }
++
++    @Test
++    public void rejectsMinecraftBytesWhenHeaderIsRequired() {
++        EmbeddedChannel channel = newChannel(address -> fail("Minecraft handshake must not set address"));
++        try {
++            channel.writeInbound(Unpooled.buffer(256).writeZero(256));
++            fail("Expected bytes without a PROXY header to be rejected");
++        } catch (HAProxyProtocolException expected) {
++            assertNotNull(expected);
++        } finally {
++            channel.finishAndReleaseAll();
++        }
++    }
++
++    private static EmbeddedChannel newChannel(Consumer<SocketAddress> addressConsumer, ChannelInboundHandlerAdapter... tail) {
++        EmbeddedChannel channel = new EmbeddedChannel(new HAProxyMessageDecoder(), HAProxyProtocol.newHandler(addressConsumer));
++        for (ChannelInboundHandlerAdapter handler : tail) {
++            channel.pipeline().addLast(handler);
++        }
++        return channel;
++    }
++
++    private static ByteBuf v2Ipv4Header() {
++        ByteBuf buf = v2Prefix(0x21, 0x11, 12);
++        buf.writeBytes(new byte[] {(byte) 198, 51, 100, 10, (byte) 203, 0, 113, 5});
++        buf.writeShort(12345);
++        buf.writeShort(25565);
++        return buf;
++    }
++
++    private static ByteBuf v2Ipv6Header() {
++        ByteBuf buf = v2Prefix(0x21, 0x21, 36);
++        buf.writeBytes(new byte[] {
++            0x20, 0x01, 0x0d, (byte) 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10,
++            0x20, 0x01, 0x0d, (byte) 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x20
++        });
++        buf.writeShort(12345);
++        buf.writeShort(25565);
++        return buf;
++    }
++
++    private static ByteBuf v2LocalHeader() {
++        return v2Prefix(0x20, 0x00, 0);
++    }
++
++    private static ByteBuf v2Prefix(int command, int family, int length) {
++        ByteBuf buf = Unpooled.buffer();
++        buf.writeBytes(V2_SIGNATURE);
++        buf.writeByte(command);
++        buf.writeByte(family);
++        buf.writeShort(length);
++        return buf;
++    }
++
++    private static void assertTrueNoAddress(List<SocketAddress> addresses) {
++        assertEquals(0, addresses.size());
++    }
++}

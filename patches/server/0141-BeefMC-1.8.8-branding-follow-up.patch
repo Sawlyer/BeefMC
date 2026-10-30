@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 23:50:22 +0100
+Subject: [PATCH] Rebrand 1.8.8 runtime as BeefMC
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index acb39edd88976933af30a9576d2c60e433ea3d17..7070419f4618ff5ed3f172101b5101777b1f116b 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -121,7 +121,7 @@ tasks {
+         manifest {
+             val git = Git(rootProject.layout.projectDirectory)
+             val gitHash = git("rev-parse", "--short=7", "HEAD").getText().trim()
+-            val implementationVersion = System.getenv("GITHUB_RUN_NUMBER") ?: "\"$gitHash\""
++            val implementationVersion = gitHash
+             val date = git("show", "-s", "--format=%ci", gitHash).getText().trim()
+             val gitBranch = git("rev-parse", "--abbrev-ref", "HEAD").getText().trim()
+             attributes(
+diff --git a/src/main/java/com/hpfxd/pandaspigot/config/PacketLimiterConfig.java b/src/main/java/com/hpfxd/pandaspigot/config/PacketLimiterConfig.java
+index 24d213655f038129e25bd75ce876ba68ed43105c..c6d4008c34db7f002e1654df70fba4ac34bd8e62 100644
+--- a/src/main/java/com/hpfxd/pandaspigot/config/PacketLimiterConfig.java
++++ b/src/main/java/com/hpfxd/pandaspigot/config/PacketLimiterConfig.java
+@@ -80,12 +80,12 @@ public class PacketLimiterConfig {
+                     try {
+                         clazz = Class.forName("net.minecraft.server." + key);
+                     } catch (ClassNotFoundException e) {
+-                        Bukkit.getLogger().warning("Packet '" + key + "' does not exist, cannot limit it! Please update pandaspigot.yml");
++                        Bukkit.getLogger().warning("Packet '" + key + "' does not exist, cannot limit it! Please update beefmc.yml");
+                         continue;
+                     }
+ 
+                     if (!Packet.class.isAssignableFrom(clazz)) {
+-                        Bukkit.getLogger().warning("Class '" + key + "' is not a packet, cannot limit it! Please update pandaspigot.yml");
++                        Bukkit.getLogger().warning("Class '" + key + "' is not a packet, cannot limit it! Please update beefmc.yml");
+                         continue;
+                     }
+ 
+diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
+index 0f4e8c767632430a4cda8905331e6cede4351566..c8eedbb0380e18b6a5deb9bdea3130024a44ec5c 100644
+--- a/src/main/java/net/minecraft/server/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/DedicatedServer.java
+@@ -209,7 +209,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+             }
+             bindAddress = new java.net.InetSocketAddress(inetaddress, this.R());
+             }
+-            com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) options.valueOf("pandaspigot-settings"));
++            com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) options.valueOf("beefmc-settings"));
+             // PandaSpigot end
+             // PaperSpigot start
+             org.github.paperspigot.PaperSpigotConfig.init((File) options.valueOf("paper-settings"));
+diff --git a/src/main/java/net/minecraft/server/TileEntitySign.java b/src/main/java/net/minecraft/server/TileEntitySign.java
+index 21423e552570adeb9601b760c9b7b107670e30b8..71d207e516b817ad7788d87d0d0220b0c901f80a 100644
+--- a/src/main/java/net/minecraft/server/TileEntitySign.java
++++ b/src/main/java/net/minecraft/server/TileEntitySign.java
+@@ -9,7 +9,9 @@ public class TileEntitySign extends TileEntity {
+     public boolean isEditable = true;
+     private EntityHuman h;
+     private final CommandObjectiveExecutor i = new CommandObjectiveExecutor();
+-    public static final int MAX_SIGN_LINE_LENGTH = Integer.getInteger("Panda.maxSignLength", 80); // PandaSpigot
++    public static final int MAX_SIGN_LINE_LENGTH = Integer.getInteger(
++        "beefmc.maxSignLength", Integer.getInteger("Panda.maxSignLength", 80)
++    ); // BeefMC - Keep the PandaSpigot property as a legacy alias
+ 
+     public TileEntitySign() {}
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 2eac381a825ed0edabd12816432f6d2d655887ef..1557000db4c23b234d2c3beedbf53c8229994e82 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -127,7 +127,7 @@ import net.md_5.bungee.api.chat.BaseComponent;
+ 
+ public final class CraftServer implements Server {
+     private static final Player[] EMPTY_PLAYER_ARRAY = new Player[0];
+-    private final String serverName = "PandaSpigot"; // PandaSpigot
++    private final String serverName = "BeefMC"; // BeefMC
+     private final String serverVersion;
+     private final String bukkitVersion = Versioning.getBukkitVersion();
+     private final Logger logger = Logger.getLogger("Minecraft");
+@@ -748,7 +748,7 @@ public final class CraftServer implements Server {
+ 
+         org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
+         org.github.paperspigot.PaperSpigotConfig.init((File) console.options.valueOf("paper-settings")); // PaperSpigot
+-        com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) console.options.valueOf("pandaspigot-settings")); // PandaSpigot
++        com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) console.options.valueOf("beefmc-settings")); // BeefMC
+         for (WorldServer world : console.worlds) {
+             world.worldData.setDifficulty(difficulty);
+             world.setSpawnFlags(monsters, animals);

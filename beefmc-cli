@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+
+# resolve shell-specifics
+case "$(echo "$SHELL" | sed -E 's|/usr(/local)?||g')" in
+    "/bin/zsh")
+        RCPATH="$HOME/.zshrc"
+        SOURCE="${BASH_SOURCE[0]:-${(%):-%N}}"
+    ;;
+    *)
+        RCPATH="$HOME/.bashrc"
+        if [[ -f "$HOME/.bash_aliases" ]]; then
+            RCPATH="$HOME/.bash_aliases"
+        fi
+        SOURCE="${BASH_SOURCE[0]}"
+    ;;
+esac
+
+# get base dir regardless of execution location
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SOURCE=$([[ "$SOURCE" = /* ]] && echo "$SOURCE" || echo "$PWD/${SOURCE#./}")
+basedir=$(dirname "$SOURCE")
+gitcmd="git -c commit.gpgsign=false"
+
+source "$basedir/scripts/functions.sh"
+
+"$basedir"/scripts/requireDeps.sh || exit 1
+
+failed=0
+case "$1" in
+    "rb" | "rbp" | "rebuild")
+    (
+        set -e
+        cd "$basedir"
+        scripts/rebuildPatches.sh "$basedir" $2 || exit 1
+    ) || failed=1
+    ;;
+    "rbf" | "rbfull")
+    (
+        set -e
+        cd "$basedir"
+        scripts/rebuildPatches.sh "$basedir" "nofilter" || exit 1
+    ) || failed=1
+    ;;
+    "setup")
+    (
+        set -e
+        cd "$basedir"
+        scripts/setup.sh "$basedir" || exit 1
+    ) || failed=1
+    ;;
+    "p" | "patch")
+    (
+        set -e
+        cd "$basedir"
+        scripts/applyPatches.sh "$basedir" || exit 1
+    ) || failed=1
+    ;;
+    "j" | "jar")
+    (
+        set -e
+        cd "$basedir"
+        ./gradlew build && ./scripts/paperclip.sh "$basedir" || exit 1
+    ) || failed=1
+    ;;
+    "pc" | "paperclip")
+    (
+        set -e
+        cd "$basedir"
+        scripts/paperclip.sh "$basedir" || exit 1
+    ) || failed=1
+    ;;
+    "r" | "root")
+        cd "$basedir"
+    ;;
+    "a" | "api")
+        cd "$basedir/BeefMC-API"
+    ;;
+    "s" | "server")
+        cd "$basedir/BeefMC-Server"
+    ;;
+    "c" | "clean")
+        rm -rf BeefMC-API/build
+        rm -rf BeefMC-Server/build
+        echo "Cleaned BeefMC build files"
+    ;;
+    "dc" | "distclean" | "reset")
+        rm -rf BeefMC-API
+        rm -rf BeefMC-Server
+        rm -rf base
+        rm -rf work
+        echo "Cleaned ALL generated, build and work files"
+    ;;
+    "con" | "continue")
+        if [ -d ".git/rebase-apply" ]; then
+            git -c commit.gpgsign=false am --continue
+        elif [ -d ".git/rebase-merge" ]; then
+            git -c commit.gpgsign=false rebase --continue
+        fi
+    ;;
+    "e" | "edit")
+        case "$2" in
+            "s" | "server")
+            mkdir -p "$basedir/work/Temp"
+            echo "$basedir/BeefMC-Server" > "$basedir/work/Temp/PAPER_LAST_EDIT"
+            cd "$basedir/BeefMC-Server"
+            (
+                set -e
+
+                paperstash
+                $gitcmd rebase -i upstream/upstream
+                paperunstash
+            )
+            ;;
+            "a" | "api")
+            mkdir -p "$basedir/work/Temp"
+            echo "$basedir/BeefMC-API" > "$basedir/work/Temp/PAPER_LAST_EDIT"
+            cd "$basedir/BeefMC-API"
+            (
+                set -e
+
+                paperstash
+                $gitcmd rebase -i upstream/upstream
+                paperunstash
+            )
+            ;;
+            "c" | "continue")
+            cd "$( < "$basedir/work/Temp/PAPER_LAST_EDIT")"
+            rm -f "$basedir/work/Temp/PAPER_LAST_EDIT"
+            (
+                set -e
+
+                $gitcmd add .
+                $gitcmd commit --amend
+                $gitcmd rebase --continue
+
+                cd "$basedir"
+                scripts/rebuildPatches.sh "$basedir"
+            )
+            ;;
+            *)
+                echo "You must edit either the api or server."
+            ;;
+        esac
+    ;;
+    "install")
+        if [[ -f "$RCPATH" ]] ; then
+            NAME="beefmc"
+            if [[ ! -z "${2+x}" ]] ; then
+                NAME="$2"
+            fi
+            (grep "alias $NAME=" "$RCPATH" > /dev/null) && (sed -i "s|alias $NAME=.*|alias $NAME='. $SOURCE'|g" "$RCPATH") || (echo "alias $NAME='. $SOURCE'" >> "$RCPATH")
+            alias "$NAME=. $SOURCE"
+            echo "You can now type '$NAME' to access the BeefMC build tool."
+        else
+          echo "Could not install the BeefMC build tool alias: $RCPATH is missing"
+        fi
+    ;;
+    *)
+        echo "BeefMC build tool. Commands build and manage BeefMC's 1.8.8 source."
+        echo "environment. For all of the functionality of this command to be available, you must first run the"
+        echo "'install' command. View below for details. For essential building and patching, you do not need to do the install."
+        echo ""
+        echo " Normal commands:"
+        echo "  * rb, rebuild         | Rebuild patches, can be called from anywhere."
+        echo "  * setup               | Remap, decompile, and patch Minecraft. Can be run from anywhere."
+        echo "  * p, patch            | Apply all patches to the project without building it. Can be run from anywhere."
+        echo "  * j, jar              | Apply all patches and build the project, paperclip.jar will be output. Can be run from anywhere."
+        echo "  * c, clean            | Removes BeefMC API and server build files."
+        echo "  * dc, distclean       | Removes generated source, base, and work files."
+        echo "  * con, continue       | Shortcut command for running git am --continue, or git rebase --continue."
+        echo ""
+        echo " These commands require the install command before use:"
+        echo "  * r, root             | Change directory to the root of the project."
+        echo "  * a. api              | Move to the BeefMC API directory."
+        echo "  * s, server           | Move to the BeefMC server directory."
+        echo "  * e, edit             | Use to edit a specific patch, give it the argument \"server\" or \"api\""
+        echo "                        | respectively to edit the correct project. Use the argument \"continue\" after"
+        echo "                        | the changes have been made to finish and rebuild patches. Can be called from anywhere."
+        echo ""
+        echo "  * install             | Add an alias to $RCPATH to allow full functionality of this script. Run as:"
+        echo "                        |     . ./beefmc install"
+        echo "                        | After you run this command you'll be able to run 'beefmc' from anywhere."
+        echo "                        | The default alias is 'beefmc'; you can give an argument to override it"
+        echo "                        | this default, such as:"
+        echo "                        |     . ./beefmc install example"
+        echo "                        | Which will allow you to run 'example' instead."
+    ;;
+esac
+
+unset RCPATH
+unset SOURCE
+unset basedir
+unset -f color
+unset -f colorend
+unset -f paperstash
+unset -f paperunstash
+if [[ "$failed" == "1" ]]; then
+	unset failed
+	false
+else
+	unset failed
+	true
+fi

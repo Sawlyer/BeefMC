@@ -1,0 +1,40 @@
+name: "Crash or stack trace"
+description: Report a server crash or concerning stack trace.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use an identifiable BeefMC build. Check that the issue is reproducible.
+        Do not post secrets, personal data, or world files.
+
+  - type: textarea
+    attributes:
+      label: Full stack trace
+      description: Paste the full stack trace or provide an mclo.gs link.
+      value: |
+        ```text
+        Paste the stack trace or link here.
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: BeefMC build and Minecraft version
+      description: Paste the full `/version` output, build, or commit.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Plugins and versions
+      description: List plugins, their versions, and the circumstances of the crash.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Steps or context
+      description: Describe the action before the crash, its frequency, and recent changes.
+    validations:
+      required: false

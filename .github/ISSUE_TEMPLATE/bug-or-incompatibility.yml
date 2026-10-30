@@ -1,0 +1,51 @@
+name: "Bug or incompatibility"
+description: Report unexpected behavior or a vanilla/plugin incompatibility.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use an identifiable BeefMC build and include the Minecraft version.
+        Check existing issues in this repository before opening a new one.
+        Do not post secrets, personal data, or world files.
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: Describe what should happen.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Observed behavior
+      description: Describe what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: Provide exact steps and the minimum context needed to reproduce the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: BeefMC build and Minecraft version
+      description: Paste the full `/version` output, build, or commit.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Plugins and datapacks
+      description: List plugins, versions, and datapacks. Include a result without plugins if possible.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Logs and additional context
+      description: Add relevant excerpts after removing sensitive data.
+    validations:
+      required: false

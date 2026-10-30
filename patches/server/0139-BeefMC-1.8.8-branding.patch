@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 13:49:31 +0100
+Subject: [PATCH] BeefMC 1.8.8 branding
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 5fd93af71de1c39690c5335b94b9cb2b62af14d1..acb39edd88976933af30a9576d2c60e433ea3d17 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -53,7 +53,7 @@ dependencies {
+ fun TaskContainer.registerRunTask(
+     name: String, block: JavaExec.() -> Unit
+ ): TaskProvider<JavaExec> = register<JavaExec>(name) {
+-    group = "pandaspigot"
++    group = "beefmc"
+     standardInput = System.`in`
+     workingDir = rootProject.layout.projectDirectory.dir(
+         providers.gradleProperty("runWorkDir").orElse("run")
+@@ -126,8 +126,8 @@ tasks {
+             val gitBranch = git("rev-parse", "--abbrev-ref", "HEAD").getText().trim()
+             attributes(
+                 "Main-Class" to "org.bukkit.craftbukkit.Main",
+-                "Implementation-Title" to "CraftBukkit",
+-                "Implementation-Version" to "git-PandaSpigot-$implementationVersion",
++                "Implementation-Title" to "BeefMC",
++                "Implementation-Version" to "git-BeefMC-$implementationVersion",
+                 "Implementation-Vendor" to date,
+                 "Specification-Title" to "Bukkit",
+                 "Specification-Version" to project.version,
+diff --git a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
+index c63cd15c13b503d91ef0245ffe0de7f85dd6f540..5ae20fa1da2efa23557bbbee5bb4334ba108b0c4 100644
+--- a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
++++ b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotConfig.java
+@@ -35,7 +35,7 @@ public class PandaSpigotConfig {
+         EOYamlConfigurationLoader loader = EOYamlConfigurationLoader.builder()
+                 .file(file)
+                 .defaultOptions(o -> o
+-                        .header("This is the configuration file for PandaSpigot.\n" +
++                        .header("This is the configuration file for BeefMC.\n" +
+                                 "Use caution when modifying settings, as some may impact gameplay in non-obvious ways.")
+                         .mapFactory(MapFactories.insertionOrdered())
+                         .serializers(build -> build.register(PacketLimiterConfig.class, new PacketLimiterConfig.Serializer())
+diff --git a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotWorldConfig.java b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotWorldConfig.java
+index f8a434abfe92d31e390b70788805128fd1769a9f..30971dbff964944df7cc72902c76bd081ea06417 100644
+--- a/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotWorldConfig.java
++++ b/src/main/java/com/hpfxd/pandaspigot/config/PandaSpigotWorldConfig.java
+@@ -59,7 +59,7 @@ public class PandaSpigotWorldConfig {
+             "selects chunks around players for ticking, improving performance at the cost\n" +
+             "of deviating from vanilla chunk ticking behaviour (for example, plant growth\n" +
+             "rates may differ).\n" +
+-            "When disabled, uses PandaSpigot's chunk ticking implementation based on\n" +
++            "When disabled, uses BeefMC's chunk ticking implementation based on\n" +
+             "the vanilla 1.9 algorithm, which more closely matches vanilla 1.8/1.9\n" +
+             "behaviour while still providing performance optimizations.\n" +
+             "Default: false")
+diff --git a/src/main/java/com/hpfxd/pandaspigot/console/PandaConsole.java b/src/main/java/com/hpfxd/pandaspigot/console/PandaConsole.java
+index 25a515b681bbbb70946f2ec73647a6f184f81b3c..cc2cf1cca4bb77fd716f2aaba5f65b7bbcd689a6 100644
+--- a/src/main/java/com/hpfxd/pandaspigot/console/PandaConsole.java
++++ b/src/main/java/com/hpfxd/pandaspigot/console/PandaConsole.java
+@@ -32,7 +32,7 @@ public class PandaConsole extends SimpleTerminalConsole {
+     @Override
+     protected LineReader buildReader(LineReaderBuilder builder) {
+         return super.buildReader(builder
+-            .appName("PandaSpigot")
++            .appName("BeefMC")
+             .variable(LineReader.HISTORY_FILE, Paths.get(".console_history"))
+             .completer(new PandaConsoleCompleter(this.server)));
+     }
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index a132a29f82bc20da22ee04622fe1df513cabea70..8e40e8a2bbd2704188538e239e9239c82cd56d6b 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1215,7 +1215,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     }
+ 
+     public String getServerModName() {
+-        return "PandaSpigot"; // PandaSpigot - PandaSpigot > // PaperSpigot - PaperSpigot > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
++        return "BeefMC"; // BeefMC - BeefMC > // PandaSpigot - PandaSpigot > // PaperSpigot - PaperSpigot > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
+     }
+ 
+     public CrashReport b(CrashReport crashreport) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index d8d19207e4db256befa886bc9638759ed7c926dc..4f868274e374b6db2fb27641f515aa63aa06222a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -134,7 +134,7 @@ public class Main {
+                 // PaperSpigot End
+ 
+                 // PandaSpigot start
+-                acceptsAll(asList("pandaspigot-settings"), "File for PandaSpigot settings")
++                acceptsAll(asList("beefmc-settings", "pandaspigot-settings"), "File for BeefMC settings")
+                         .withRequiredArg()
+                         .ofType(File.class)
+                         .defaultsTo(new File("pandaspigot.yml"))
+diff --git a/src/main/java/org/spigotmc/WatchdogThread.java b/src/main/java/org/spigotmc/WatchdogThread.java
+index 879e29592d9f6c4be7bd5d5dfbf83be1eb732799..f325c22864b3b6a38d66db16a4e5f4417ef1377b 100644
+--- a/src/main/java/org/spigotmc/WatchdogThread.java
++++ b/src/main/java/org/spigotmc/WatchdogThread.java
+@@ -19,7 +19,7 @@ public class WatchdogThread extends Thread
+ 
+     private WatchdogThread(long timeoutTime, boolean restart)
+     {
+-        super( "PandaSpigot Watchdog Thread" ); // PandaSpigot
++        super( "BeefMC Watchdog Thread" ); // BeefMC
+         this.timeoutTime = timeoutTime;
+         this.restart = restart;
+     }
+@@ -56,9 +56,9 @@ public class WatchdogThread extends Thread
+             {
+                 Logger log = Bukkit.getServer().getLogger();
+                 log.log( Level.SEVERE, "The server has stopped responding!" );
+-                log.log( Level.SEVERE, "Please report this in https://github.com/hpfxd/PandaSpigot/issues!" ); // PandaSpigot
++                log.log( Level.SEVERE, "Please see https://github.com/Sawlyer/BeefMC for BeefMC project information." ); // BeefMC
+                 log.log( Level.SEVERE, "Be sure to include ALL relevant console errors and Minecraft crash reports" );
+-                log.log( Level.SEVERE, "PandaSpigot version: " + Bukkit.getServer().getVersion() ); // PandaSpigot
++                log.log( Level.SEVERE, "BeefMC version: " + Bukkit.getServer().getVersion() ); // BeefMC
+                 //
+                 if(net.minecraft.server.World.haveWeSilencedAPhysicsCrash)
+                 {
+@@ -68,7 +68,7 @@ public class WatchdogThread extends Thread
+                 }
+                 //
+                 log.log( Level.SEVERE, "------------------------------" );
+-                log.log( Level.SEVERE, "Server thread dump (Look for plugins here before reporting to PandaSpigot!):" ); // PandaSpigot
++                log.log( Level.SEVERE, "Server thread dump (check plugin frames when investigating a server stall):" ); // BeefMC
+                 dumpThread( ManagementFactory.getThreadMXBean().getThreadInfo( MinecraftServer.getServer().primaryThread.getId(), Integer.MAX_VALUE ), log );
+                 log.log( Level.SEVERE, "------------------------------" );
+                 //

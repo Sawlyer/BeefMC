@@ -1,0 +1,26 @@
+schema_version: 1
+versions:
+  - minecraft: "1.8.8"
+    branch: version/1.8.8
+    upstream:
+      repository: hpfxd/PandaSpigot
+      ref: master
+      commit: 1afa5656056df41dd6fec8383927b925c729623d
+  - minecraft: "1.21.11"
+    branch: version/1.21.11
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/1.21.11
+      commit: 12f438e06b8a35d6584687565ec5eeacb373972c
+  - minecraft: "26.1.2"
+    branch: version/26.1.2
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/26.1.2
+      commit: 3c591d7020b402fa38430cb57ffd1d29b61681a3
+  - minecraft: "26.3"
+    branch: main
+    upstream:
+      repository: Winds-Studio/Leaf
+      ref: ver/26.3
+      commit: 66f99f8eb21628892b47671375884e97052ba52b

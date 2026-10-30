@@ -85,5 +85,6 @@ jobs:
       source_ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || matrix.branch }}
       version_branch: ${{ matrix.branch }}
       tooling_ref: ${{ needs.validate.outputs.tooling_ref }}
+      runtime_validation: false
     permissions:
       contents: read

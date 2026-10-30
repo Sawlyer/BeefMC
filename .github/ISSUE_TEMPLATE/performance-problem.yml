@@ -1,0 +1,58 @@
+name: "Performance issue"
+description: Report a performance issue with a reproducible profile.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe a reproducible scenario and provide a Spark profile.
+        Do not post secrets, personal data, or world files.
+
+  - type: textarea
+    attributes:
+      label: Symptom and scenario
+      description: Include player count, duration, frequency, and reproduction steps.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Spark profile
+      description: Provide a profile link, not only a screenshot.
+      placeholder: "https://spark.lucko.me/..."
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: BeefMC build and Minecraft version
+      description: Paste the full `/version` output, build, or commit.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Plugins and versions
+      description: Include the plugin and datapack lists.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Environment and configuration
+      description: Hardware, operating system, Java version, memory, JVM options, and relevant server configuration.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Baseline comparison, if available
+      description: Use the same machine, Minecraft version, world, plugins, configuration, and scenario.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Logs and additional information
+      description: Add relevant excerpts or links after removing sensitive data.
+    validations:
+      required: false

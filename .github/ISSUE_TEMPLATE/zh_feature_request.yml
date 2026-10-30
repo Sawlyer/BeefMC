@@ -1,0 +1,16 @@
+name: CN | 功能建议
+description: 为 BeefMC 提交功能建议
+type: "Feature"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请说明此功能要解决的问题，以及它在 BeefMC 中应如何工作。
+
+  - type: textarea
+    attributes:
+      label: 你想加入什么功能？
+      description: 用几句话尽可能清晰，详细的描述你所需要的功能或者建议。
+    validations:
+      required: true

@@ -43,7 +43,7 @@ index a6971411d035f1fd759c8348320c6b43d65ce957..85e303b3a3140314d725c9eb8f8f7adf
  
      public ClientboundLightUpdatePacketData(
          final ChunkPos chunkPos,
-@@ -29,22 +43,90 @@ public class ClientboundLightUpdatePacketData {
+@@ -29,22 +43,92 @@ public class ClientboundLightUpdatePacketData {
          final @Nullable BitSet skyChangedLightSectionFilter,
          final @Nullable BitSet blockChangedLightSectionFilter
      ) {
@@ -123,6 +123,7 @@ index a6971411d035f1fd759c8348320c6b43d65ce957..85e303b3a3140314d725c9eb8f8f7adf
 +            // Clone only at the end to minimize work
 +            for (int i = 0; i < skyCount; i++) {
 +                this.skyUpdates[i] = skyBuffer[i].clone();
++                skyBuffer[i] = null; // BeefMC - release temporary light buffer references
 +            }
 +        } else {
 +            this.skyUpdates = EMPTY_ARRAY;
@@ -133,6 +134,7 @@ index a6971411d035f1fd759c8348320c6b43d65ce957..85e303b3a3140314d725c9eb8f8f7adf
 +            // Clone only at the end to minimize work
 +            for (int i = 0; i < blockCount; i++) {
 +                this.blockUpdates[i] = blockBuffer[i].clone();
++                blockBuffer[i] = null; // BeefMC - release temporary light buffer references
              }
 +        } else {
 +            this.blockUpdates = EMPTY_ARRAY;

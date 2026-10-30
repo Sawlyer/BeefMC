@@ -41,15 +41,15 @@ No BeefMC-specific memory or performance gain is documented yet. Results inherit
 Mark missing measurements `Not measured`. Compare baseline and BeefMC on the same machine, workload, and configuration. Do not generalize results beyond the conditions recorded.
 ## 1.21.11 — 5-second TPS lag check (implemented, not measured)
 
-- **Status:** Implemented in patch source; patch application and build pending.
+- **Status:** Patch application and CI build passed; CPU and memory effect not measured.
 - **Date and reference:** 2026-10-30; BeefMC issue #1.
 - **Minecraft versions:** 1.21.11.
-- **Changed area:** `leaf-server/minecraft-patches/features/0337-BeefMC-Optimize-5-second-TPS-lag-check.patch`.
-- **Hypothesis:** The lagging check needs only the 5-second TPS window. Reading it directly avoids calculating the 1-minute, 5-minute, and 15-minute windows on each check.
-- **Compatibility:** No plugin API or configuration changes. Existing lock and TPS calculation are reused. Runtime and plugin behavior checks remain pending.
-- **Method:** Compare identical BeefMC baseline and candidate artifacts with the short 1.21.11 steady-world profile; sequential runs, 25 local bots, 60-second warm-up, 180-second sample, 2 repetitions. No comparison has been run for this change.
+- **Changed area:** `leaf-server/minecraft-patches/features/0338-BeefMC-Optimize-5-second-TPS-lag-check.patch`.
+- **Hypothesis:** Lag check reads only 5-second TPS. Dedicated helper skips 1-minute, 5-minute, and 15-minute calculations and array creation.
+- **Compatibility:** Same 5-second formula, tick interval, and lock. No plugin API or configuration change. CI applied patches and compiled target; focused runtime threshold check not run.
+- **Method:** Before/after profile must stress lagging path; steady-world 25-bot profile alone may not exercise it. No comparison run.
 - **Environment:** Windows 11, 32 logical CPUs, 64 GiB RAM, Java 21.0.12.1, `-Xms4G -Xmx4G`.
 - **Workload:** Pre-generated shared world snapshot, steady-world movement, no plugins.
-- **Results:** Not measured. Local Gradle daemon failed before project configuration with `Unable to establish loopback connection`.
+- **Results:** Not measured. No CPU, memory, or MSPT gain claimed.
 - **Conclusion:** Not measured; no gain claim.
-- **Remaining checks:** Patch application, branch build, candidate artifact, before/after profile, lag-threshold behavior, and plugin compatibility review.
+- **Remaining checks:** Focused lag-threshold behavior and before/after profile; plugin compatibility review.

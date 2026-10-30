@@ -109,14 +109,12 @@ try {
   await stopServer();
   await configureServer();
   await startServer();
-  await assertCommand('tick freeze');
   await assertCommand('forceload add 100 100');
 
   await placeTestHoppers(0);
   const fullTransfer = await stepUntilTransfer(0);
   assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Full-capacity transfer must move five items; observed ${JSON.stringify(fullTransfer)}`);
 
-  await assertCommand('tick freeze');
   await placeTestHoppers(60);
   const partialTransfer = await stepUntilTransfer(60);
   assert.deepEqual(partialTransfer, { source: 59, destination: 64 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}`);
@@ -251,13 +249,20 @@ async function placeTestHoppers(destinationCount) {
 }
 
 async function stepUntilTransfer(initialDestinationCount) {
-  for (let tick = 0; tick < 24; tick++) {
-    await assertCommand('tick step 1');
+  await assertCommand('tick unfreeze');
+  for (let attempt = 0; attempt < 100; attempt++) {
+    await delay(50);
     const source = await readCount(100, 65, 100);
     const destination = await readCount(100, 64, 100);
-    if (source !== 63 || destination !== initialDestinationCount) return { source, destination };
+    if (source !== 63 || destination !== initialDestinationCount) {
+      await assertCommand('tick freeze');
+      return { source, destination };
+    }
   }
-  throw new Error(`Hopper did not pull from source chest after 24 manual ticks (source=${await readCount(100, 65, 100)}, destination=${await readCount(100, 64, 100)})`);
+  const source = await readCount(100, 65, 100);
+  const destination = await readCount(100, 64, 100);
+  await assertCommand('tick freeze');
+  throw new Error(`Hopper did not pull from source chest after 5 seconds (source=${source}, destination=${destination})`);
 }
 
 async function readCount(x, y, z) {

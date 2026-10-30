@@ -15,6 +15,11 @@ on:
         description: Ref containing BeefMC catalog and scripts
         required: true
         type: string
+      runtime_validation:
+        description: Build a distributable server jar and run focused RCON integration checks
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -112,6 +117,36 @@ jobs:
         if: needs.resolve.outputs.build_family == 'modern'
         working-directory: source
         run: ./gradlew build --stacktrace --no-daemon
+      - name: Create modern runtime jar
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'modern'
+        working-directory: source
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: |
+          if [ "$MINECRAFT_VERSION" = "1.21.11" ]; then
+            ./gradlew :beefmc-server:createMojmapPaperclipJar --no-daemon
+          else
+            ./gradlew :beefmc-server:createPaperclipJar --no-daemon
+          fi
+      - name: Package modern runtime jar
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'modern'
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: |
+          python -m pip install --disable-pip-version-check -r tooling/scripts/versioning/requirements.txt
+          python tooling/scripts/versioning/release.py package v0.0.1 "$MINECRAFT_VERSION" --source-root source --catalog tooling/versions/catalog.yml
+      - name: Verify hopper amount with sleeping optimization disabled
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'modern'
+        working-directory: source
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: node scripts/validation/hopper-amount.mjs "dist/BeefMC-${MINECRAFT_VERSION}-v0.0.1.jar" "$JAVA_HOME/bin/java" "$RUNNER_TEMP/hopper-amount-${MINECRAFT_VERSION}-disabled" false
+      - name: Verify hopper amount with sleeping optimization enabled
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'modern'
+        working-directory: source
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: node scripts/validation/hopper-amount.mjs "dist/BeefMC-${MINECRAFT_VERSION}-v0.0.1.jar" "$JAVA_HOME/bin/java" "$RUNNER_TEMP/hopper-amount-${MINECRAFT_VERSION}-enabled" true
       - name: Upload build and test reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -120,5 +155,6 @@ jobs:
           path: |
             source/**/build/reports/**
             source/**/build/test-results/**/*.xml
+            ${{ runner.temp }}/hopper-amount-*/logs/latest.log
           if-no-files-found: ignore
           retention-days: 14

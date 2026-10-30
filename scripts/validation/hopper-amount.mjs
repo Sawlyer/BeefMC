@@ -236,7 +236,7 @@ async function placeTestHoppers(destinationCount) {
   await assertCommand('setblock 100 64 100 minecraft:air');
   await assertCommand('setblock 100 65 100 minecraft:air');
   await assertCommand('setblock 101 64 100 minecraft:stone');
-  await assertCommand('setblock 100 64 100 minecraft:hopper[facing=east]');
+  await assertCommand('setblock 100 64 100 minecraft:hopper[facing=east,enabled=true]');
   await assertCommand('setblock 100 65 100 minecraft:chest');
   await assertCommand('item replace block 100 65 100 container.0 with minecraft:stone 63');
   if (destinationCount > 0) {
@@ -262,7 +262,9 @@ async function stepUntilTransfer(initialDestinationCount) {
   const source = await readCount(100, 65, 100);
   const destination = await readCount(100, 64, 100);
   await assertCommand('tick freeze');
-  throw new Error(`Hopper did not pull from source chest after 5 seconds (source=${source}, destination=${destination})`);
+  const sourceData = await rcon.command('data get block 100 65 100');
+  const hopperData = await rcon.command('data get block 100 64 100');
+  throw new Error(`Hopper did not pull from source chest after 5 seconds (source=${source}, destination=${destination}; sourceData=${sourceData}; hopperData=${hopperData})`);
 }
 
 async function readCount(x, y, z) {

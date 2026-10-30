@@ -111,13 +111,13 @@ try {
   await startServer();
   await assertCommand('forceload add 100 100');
 
-  await placeTestHoppers(0);
+  await placeTestHoppers([]);
   const fullTransfer = await stepUntilTransfer(0);
-  assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Full-capacity transfer must move five items; observed ${JSON.stringify(fullTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
+  assert.deepEqual(fullTransfer, { source: 58, destination: 5 }, `Empty hopper must accept five items; observed ${JSON.stringify(fullTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
 
-  await placeTestHoppers(60);
-  const partialTransfer = await stepUntilTransfer(60);
-  assert.deepEqual(partialTransfer, { source: 59, destination: 64 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
+  await placeTestHoppers([60, 64, 64, 64, 64]);
+  const partialTransfer = await stepUntilTransfer(316);
+  assert.deepEqual(partialTransfer, { source: 59, destination: 320 }, `Partial transfer must restore uninserted item; observed ${JSON.stringify(partialTransfer)}; sourceData=${await rcon.command('data get block 100 65 100')}; hopperData=${await rcon.command('data get block 100 64 100')}`);
 
   console.log(JSON.stringify({ result: 'passed', sleepingBlockEntity: sleepingEnabled, fullTransfer, partialTransfer, instancePath }, null, 2));
 } catch (error) {
@@ -231,7 +231,7 @@ async function assertCommand(command) {
   return result;
 }
 
-async function placeTestHoppers(destinationCount) {
+async function placeTestHoppers(destinationCounts) {
   await assertCommand('setblock 100 63 100 minecraft:stone');
   await assertCommand('setblock 100 64 100 minecraft:air');
   await assertCommand('setblock 100 65 100 minecraft:air');
@@ -239,29 +239,32 @@ async function placeTestHoppers(destinationCount) {
   await assertCommand('setblock 100 64 100 minecraft:hopper[facing=east,enabled=true]');
   await assertCommand('setblock 100 65 100 minecraft:barrel');
   await assertCommand('item replace block 100 65 100 container.0 with minecraft:stone 63');
-  if (destinationCount > 0) {
-    await assertCommand(`item replace block 100 64 100 container.0 with minecraft:stone ${destinationCount}`);
+  for (let slot = 0; slot < destinationCounts.length; slot++) {
+    const count = destinationCounts[slot];
+    if (count > 0) {
+      await assertCommand(`item replace block 100 64 100 container.${slot} with minecraft:stone ${count}`);
+    }
   }
   const source = await readCount(100, 65, 100);
-  const destination = await readCount(100, 64, 100);
+  const destination = await readInventoryCount(100, 64, 100);
   assert.equal(source, 63, 'Source inventory setup failed');
-  assert.equal(destination, destinationCount, 'Destination inventory setup failed');
+  assert.equal(destination, destinationCounts.reduce((total, count) => total + count, 0), 'Destination inventory setup failed');
 }
 
 async function stepUntilTransfer(initialDestinationCount) {
   await assertCommand('tick unfreeze');
   for (let attempt = 0; attempt < 100; attempt++) {
     await delay(50);
-    const destination = await readCount(100, 64, 100);
+    const destination = await readInventoryCount(100, 64, 100);
     if (destination !== initialDestinationCount) {
       await assertCommand('tick freeze');
       const source = await readCount(100, 65, 100);
-      const frozenDestination = await readCount(100, 64, 100);
+      const frozenDestination = await readInventoryCount(100, 64, 100);
       return { source, destination: frozenDestination };
     }
   }
   const source = await readCount(100, 65, 100);
-  const destination = await readCount(100, 64, 100);
+  const destination = await readInventoryCount(100, 64, 100);
   await assertCommand('tick freeze');
   const sourceData = await rcon.command('data get block 100 65 100');
   const hopperData = await rcon.command('data get block 100 64 100');
@@ -269,9 +272,21 @@ async function stepUntilTransfer(initialDestinationCount) {
 }
 
 async function readCount(x, y, z) {
-  const data = await assertCommand(`data get block ${x} ${y} ${z} Items[0].count`);
+  return readSlotCount(x, y, z, 0);
+}
+
+async function readInventoryCount(x, y, z) {
+  let total = 0;
+  for (let slot = 0; slot < 5; slot++) total += await readSlotCount(x, y, z, slot);
+  return total;
+}
+
+async function readSlotCount(x, y, z, slot) {
+  const data = await rcon.command(`data get block ${x} ${y} ${z} Items[{Slot:${slot}b}].count`);
+  if (/found no elements/i.test(data)) return 0;
   const match = data.match(/(?:^|\s)(\d+)\s*$/);
-  return match ? Number(match[1]) : 0;
+  assert(match, `Could not read slot ${slot} count: ${data}`);
+  return Number(match[1]);
 }
 
 function delay(ms) {

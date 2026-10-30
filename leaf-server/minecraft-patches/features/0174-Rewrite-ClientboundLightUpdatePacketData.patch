@@ -41,7 +41,7 @@ index 53ccc1f38cba87c4eb05f37e122c3def5fd4a660..4b09b2c0822cb9293560aeaf5ed1de7d
          ClientboundLightUpdatePacketData::blockUpdates,
          ClientboundLightUpdatePacketData::new
      );
-@@ -39,19 +47,74 @@ public record ClientboundLightUpdatePacketData(
+@@ -39,19 +47,76 @@ public record ClientboundLightUpdatePacketData(
          final @Nullable BitSet skyChangedLightSectionFilter,
          final @Nullable BitSet blockChangedLightSectionFilter
      ) {
@@ -95,10 +95,12 @@ index 53ccc1f38cba87c4eb05f37e122c3def5fd4a660..4b09b2c0822cb9293560aeaf5ed1de7d
 +        byte[][] skyUpdates = skyCount == 0 ? EMPTY_ARRAY : new byte[skyCount][];
 +        for (int i = 0; i < skyCount; i++) {
 +            skyUpdates[i] = skyBuffer[i].clone();
++            skyBuffer[i] = null; // BeefMC - release temporary light buffer references
 +        }
 +        byte[][] blockUpdates = blockCount == 0 ? EMPTY_ARRAY : new byte[blockCount][];
 +        for (int i = 0; i < blockCount; i++) {
 +            blockUpdates[i] = blockBuffer[i].clone();
++            blockBuffer[i] = null; // BeefMC - release temporary light buffer references
 +        }
 +        this(
 +            skyYMask, blockYMask, emptySkyYMask, emptyBlockYMask,

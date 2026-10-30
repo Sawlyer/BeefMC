@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 20:14:00 +0100
+Subject: [PATCH] Optimize 5-second TPS lookup for lag check
+
+License: GPL-3.0-only (https://www.gnu.org/licenses/gpl-3.0.html)
+
+Avoid computing the 1-minute, 5-minute, and 15-minute TPS windows when the
+tick loop only needs the 5-second average for its lagging check.
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -449,3 +449,9 @@
++    private double getTPS5s() {
++        synchronized (this.statsLock) {
++            return getTPS(this.tickTimes5s, this.tickRateManager().nanosecondsPerTick());
++        }
++    }
++
+     public double[] getTPSIncluding5SecondsReadOnly() {
+         synchronized (this.statsLock) {
+             double[] tps5s = this.tps5s;
+@@ -1393,7 +1399,7 @@
+                         io.papermc.paper.configuration.GlobalConfiguration.get().misc.catchupTicks.or(5)
+                     );
+ 
+-                    lagging = getTPSIncluding5SecondsReadOnly()[0] < org.purpurmc.purpur.PurpurConfig.laggingThreshold; // Purpur - Lagging threshold // Gale - Purpur - 5-second TPS average
++                    lagging = this.getTPS5s() < org.purpurmc.purpur.PurpurConfig.laggingThreshold; // Purpur - Lagging threshold // Gale - Purpur - 5-second TPS average
+ 
+                     // adjust ticksBehind so that it is not greater-than catchup
+                     if (ticksBehind - catchup > 0L) {

@@ -268,8 +268,8 @@ async function stepUntilTransfer(initialDestinationCount) {
 }
 
 async function readCount(x, y, z) {
-  const data = await rcon.command(`data get block ${x} ${y} ${z} Items`);
-  const match = data.match(/(?:count|Count):\s*(\d+)/);
+  const data = await assertCommand(`data get block ${x} ${y} ${z} Items[0].count`);
+  const match = data.match(/(?:^|\s)(\d+)\s*$/);
   return match ? Number(match[1]) : 0;
 }
 

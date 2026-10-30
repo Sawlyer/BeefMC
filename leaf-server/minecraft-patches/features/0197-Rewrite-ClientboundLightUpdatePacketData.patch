@@ -14,7 +14,7 @@ diff --git a/net/minecraft/network/protocol/game/ClientboundLightUpdatePacketDat
 index d30828c4a287192b1110dae627f464767a9a61e9..cc5b6e5392cdd181b460dbc2200fcb2440310562 100644
 --- a/net/minecraft/network/protocol/game/ClientboundLightUpdatePacketData.java
 +++ b/net/minecraft/network/protocol/game/ClientboundLightUpdatePacketData.java
-@@ -16,30 +16,113 @@ import org.jspecify.annotations.Nullable;
+@@ -16,30 +16,115 @@ import org.jspecify.annotations.Nullable;
  
  public class ClientboundLightUpdatePacketData {
      private static final StreamCodec<ByteBuf, byte[]> DATA_LAYER_STREAM_CODEC = ByteBufCodecs.byteArray(2048);
@@ -119,6 +119,7 @@ index d30828c4a287192b1110dae627f464767a9a61e9..cc5b6e5392cdd181b460dbc2200fcb24
 +            // Clone only at the end to minimize work
 +            for (int i = 0; i < skyCount; i++) {
 +                this.skyUpdates[i] = skyBuffer[i].clone();
++                skyBuffer[i] = null; // BeefMC - release temporary light buffer references
 +            }
 +        } else {
 +            this.skyUpdates = EMPTY_ARRAY;
@@ -129,6 +130,7 @@ index d30828c4a287192b1110dae627f464767a9a61e9..cc5b6e5392cdd181b460dbc2200fcb24
 +            // Clone only at the end to minimize work
 +            for (int i = 0; i < blockCount; i++) {
 +                this.blockUpdates[i] = blockBuffer[i].clone();
++                blockBuffer[i] = null; // BeefMC - release temporary light buffer references
              }
 +        } else {
 +            this.blockUpdates = EMPTY_ARRAY;

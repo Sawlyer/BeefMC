@@ -252,11 +252,12 @@ async function stepUntilTransfer(initialDestinationCount) {
   await assertCommand('tick unfreeze');
   for (let attempt = 0; attempt < 100; attempt++) {
     await delay(50);
-    const source = await readCount(100, 65, 100);
     const destination = await readCount(100, 64, 100);
-    if (source !== 63 || destination !== initialDestinationCount) {
+    if (destination !== initialDestinationCount) {
       await assertCommand('tick freeze');
-      return { source, destination };
+      const source = await readCount(100, 65, 100);
+      const frozenDestination = await readCount(100, 64, 100);
+      return { source, destination: frozenDestination };
     }
   }
   const source = await readCount(100, 65, 100);

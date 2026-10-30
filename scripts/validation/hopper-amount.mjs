@@ -21,6 +21,69 @@ const serverLogs = [];
 let child;
 let rcon;
 
+class Rcon {
+  #socket;
+  #nextId = 1;
+  #buffer = Buffer.alloc(0);
+  #pending = new Map();
+
+  static async connect(host, port, password) {
+    const client = new Rcon();
+    client.#socket = (await new Promise((resolve, reject) => {
+      const netSocket = connect(port, host);
+      netSocket.once('connect', () => resolve(netSocket));
+      netSocket.once('error', reject);
+    }));
+    client.#socket.on('data', chunk => client.#receive(chunk));
+    const auth = await client.#send(3, password);
+    if (auth.id === -1) throw new Error('RCON authentication rejected');
+    return client;
+  }
+
+  command(command) {
+    return this.#send(2, command).then(response => response.body);
+  }
+
+  close() {
+    this.#socket?.destroy();
+  }
+
+  #send(type, body) {
+    const id = this.#nextId++;
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.#pending.delete(id);
+        reject(new Error(`RCON request timed out: ${body}`));
+      }, 10_000);
+      this.#pending.set(id, { resolve, reject, timeout });
+      const payload = Buffer.from(body, 'utf8');
+      const length = 4 + 4 + payload.length + 2;
+      const packet = Buffer.alloc(4 + length);
+      packet.writeInt32LE(length, 0);
+      packet.writeInt32LE(id, 4);
+      packet.writeInt32LE(type, 8);
+      payload.copy(packet, 12);
+      this.#socket.write(packet);
+    });
+  }
+
+  #receive(chunk) {
+    this.#buffer = Buffer.concat([this.#buffer, chunk]);
+    while (this.#buffer.length >= 4) {
+      const length = this.#buffer.readInt32LE(0);
+      if (this.#buffer.length < length + 4) return;
+      const id = this.#buffer.readInt32LE(4);
+      const body = this.#buffer.subarray(12, length + 2).toString('utf8');
+      this.#buffer = this.#buffer.subarray(length + 4);
+      const pending = this.#pending.get(id);
+      if (!pending) continue;
+      clearTimeout(pending.timeout);
+      this.#pending.delete(id);
+      pending.resolve({ id, body });
+    }
+  }
+}
+
 await mkdir(instancePath, { recursive: false });
 await copyFile(jarPath, path.join(instancePath, 'server.jar'));
 await writeFile(path.join(instancePath, 'eula.txt'), 'eula=true\n');
@@ -204,67 +267,4 @@ async function readCount(x, y, z) {
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-class Rcon {
-  #socket;
-  #nextId = 1;
-  #buffer = Buffer.alloc(0);
-  #pending = new Map();
-
-  static async connect(host, port, password) {
-    const client = new Rcon();
-    client.#socket = (await new Promise((resolve, reject) => {
-      const netSocket = connect(port, host);
-      netSocket.once('connect', () => resolve(netSocket));
-      netSocket.once('error', reject);
-    }));
-    client.#socket.on('data', chunk => client.#receive(chunk));
-    const auth = await client.#send(3, password);
-    if (auth.id === -1) throw new Error('RCON authentication rejected');
-    return client;
-  }
-
-  command(command) {
-    return this.#send(2, command).then(response => response.body);
-  }
-
-  close() {
-    this.#socket?.destroy();
-  }
-
-  #send(type, body) {
-    const id = this.#nextId++;
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.#pending.delete(id);
-        reject(new Error(`RCON request timed out: ${body}`));
-      }, 10_000);
-      this.#pending.set(id, { resolve, reject, timeout });
-      const payload = Buffer.from(body, 'utf8');
-      const length = 4 + 4 + payload.length + 2;
-      const packet = Buffer.alloc(4 + length);
-      packet.writeInt32LE(length, 0);
-      packet.writeInt32LE(id, 4);
-      packet.writeInt32LE(type, 8);
-      payload.copy(packet, 12);
-      this.#socket.write(packet);
-    });
-  }
-
-  #receive(chunk) {
-    this.#buffer = Buffer.concat([this.#buffer, chunk]);
-    while (this.#buffer.length >= 4) {
-      const length = this.#buffer.readInt32LE(0);
-      if (this.#buffer.length < length + 4) return;
-      const id = this.#buffer.readInt32LE(4);
-      const body = this.#buffer.subarray(12, length + 2).toString('utf8');
-      this.#buffer = this.#buffer.subarray(length + 4);
-      const pending = this.#pending.get(id);
-      if (!pending) continue;
-      clearTimeout(pending.timeout);
-      this.#pending.delete(id);
-      pending.resolve({ id, body });
-    }
-  }
 }

@@ -1,0 +1,64 @@
+name: CN | 问题反馈
+description: 创建一个问题反馈来帮助我们进步！
+type: "Bug"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交问题前，请确认最新 BeefMC 版本仍可复现，并搜索已有的 BeefMC 问题。
+
+  - type: checkboxes
+    attributes:
+      label: 自我检查表
+      description: |
+        在浏览并填写其他选项之前, 请先勾选以下的框。
+      options:
+        - label: 我已搜索现有问题和文档
+          required: true
+        - label: 我填写了 Minecraft 版本、BeefMC 构建版本和相关插件
+          required: false
+        - label: 我正在使用对应 Minecraft 版本的最新 BeefMC 构建
+          required: true
+        - label: 问题在最新 BeefMC 构建上仍可复现
+          required: true
+
+  - type: textarea
+    attributes:
+      label: 问题描述
+      description: 清晰简洁地描述所观察到的行为。
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 所期望的行为
+      description: 清晰简洁地描述您预期发生的情况。
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 如何复现？
+      description: 简单描述复现此问题的步骤。
+      placeholder: |
+        1. 进入服务器 '...'
+        2. 输入/example '...'
+        3. 服务器崩溃 '...'
+        4. 在控制台看到报错
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Spark profiler 链接
+      description: |
+        粘贴你的 Spark profiler 链接到此处, Spark profiler 往往包含了对解决此问题有用的信息, 
+        查阅 https://spark.lucko.me/docs/ 来学习如何使用 Spark。
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: 错误日志 (如存在)
+      description: 请上传完整的报错信息或完整日志到 https://mclo.gs 或 https://pastes.dev, 并将链接粘贴在此处。

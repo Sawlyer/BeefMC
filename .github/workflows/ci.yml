@@ -1,0 +1,89 @@
+name: BeefMC CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "version/**"
+  push:
+    branches:
+      - main
+      - "version/**"
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Minecraft version, branch name, or all
+        required: true
+        default: all
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beefmc-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: Resolve version matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+      tooling_ref: ${{ steps.targets.outputs.tooling_ref }}
+    steps:
+      - name: Checkout tooling source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install catalog parser
+        run: python -m pip install --disable-pip-version-check -r scripts/versioning/requirements.txt
+      - name: Validate catalog and tests
+        run: |
+          python scripts/versioning/catalog.py validate
+          python -m unittest discover -s tests/versioning -v
+      - name: Choose CI targets
+        id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.ref_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.base_ref }}
+          INPUT_VERSION: ${{ inputs.version }}
+          TOOLING_REF: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            python scripts/versioning/catalog.py matrix all >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            python scripts/versioning/catalog.py matrix "$INPUT_VERSION" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            if python scripts/versioning/catalog.py resolve-branch "$HEAD_REF" >/dev/null 2>&1; then
+              python scripts/versioning/catalog.py matrix "$HEAD_REF" >> "$GITHUB_OUTPUT"
+            else
+              python scripts/versioning/catalog.py matrix "$BASE_REF" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            python scripts/versioning/catalog.py matrix "$EVENT_REF" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tooling_ref=$TOOLING_REF" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build Minecraft ${{ matrix.minecraft }} (JDK ${{ matrix.build_jdk }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
+    uses: ./.github/workflows/version-ci.yml
+    with:
+      source_ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || matrix.branch }}
+      version_branch: ${{ matrix.branch }}
+      tooling_ref: ${{ needs.validate.outputs.tooling_ref }}
+    permissions:
+      contents: read

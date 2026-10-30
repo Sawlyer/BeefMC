@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dreeam <61569423+Dreeam-qwq@users.noreply.github.com>
+Date: Thu, 16 Sep 2021 20:39:45 -0400
+Subject: [PATCH] Rebrand
+
+
+diff --git a/net/minecraft/CrashReport.java b/net/minecraft/CrashReport.java
+index effd79d743d17db2a9f852c8bf3c97666b9ac40f..9ccfef494348aee7ee5f9cd1833fe80fce53faa3 100644
+--- a/net/minecraft/CrashReport.java
++++ b/net/minecraft/CrashReport.java
+@@ -23,6 +23,7 @@ import org.slf4j.Logger;
+ public class CrashReport {
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
++    private static final List<String> EXTRA_INFO = List.of("", "DO NOT REPORT THIS TO PAPER! REPORT TO LEAF INSTEAD!", ""); // Leaf - Rebrand
+     private final String title;
+     private final Throwable exception;
+     private final List<CrashReportCategory> details = Lists.newArrayList();
+@@ -126,7 +127,7 @@ public class CrashReport {
+     }
+ 
+     public String getFriendlyReport(final ReportType reportType) {
+-        return this.getFriendlyReport(reportType, List.of());
++        return this.getFriendlyReport(reportType, EXTRA_INFO); // Leaf - Rebrand
+     }
+ 
+     public @Nullable Path getSaveFile() {
+@@ -156,7 +157,7 @@ public class CrashReport {
+     }
+ 
+     public boolean saveToFile(final Path file, final ReportType reportType) {
+-        return this.saveToFile(file, reportType, List.of());
++        return this.saveToFile(file, reportType, EXTRA_INFO); // Leaf - Rebrand
+     }
+ 
+     public SystemReport getSystemReport() {
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 581c4e89fc7ec278657e9102a59fd6e8ce56f487..71daf85aba99591800a6e2ef501618d0f03be6eb 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -1336,7 +1336,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+             }
+             // Paper end - Add onboarding message for initial server start
+             // Paper start - Improve outdated version checking
+-            if (false && System.getProperty("paper.disableStartupVersionCheck") == null && io.papermc.paper.configuration.GlobalConfiguration.get().updateChecker.enabled) { // Purpur - disable paper startup check
++            if (false && System.getProperty("paper.disableStartupVersionCheck") == null && io.papermc.paper.configuration.GlobalConfiguration.get().updateChecker.enabled) { // Purpur - disable paper startup check // Leaf - Rebrand - diff on change
+                 CompletableFuture.runAsync(com.destroystokyo.paper.PaperVersionFetcher::getUpdateStatusStartupMessage, io.papermc.paper.util.MCUtil.ASYNC_EXECUTOR);
+             }
+             // Paper end - Improve outdated version checking
+diff --git a/net/minecraft/world/damagesource/DamageSource.java b/net/minecraft/world/damagesource/DamageSource.java
+index 2baac450cb405403caed3183a715301848a48772..45e2e9778bdcf24fae6c0c5bcc1b6fa50ef2c5a3 100644
+--- a/net/minecraft/world/damagesource/DamageSource.java
++++ b/net/minecraft/world/damagesource/DamageSource.java
+@@ -68,7 +68,7 @@ public class DamageSource {
+ 
+     public DamageSource eventEntityDamager(final Entity entity) {
+         if (this.directEntity != null) {
+-            throw new IllegalStateException("Cannot set an event damager when a direct entity is already set (report a bug to Paper)");
++            throw new IllegalStateException("Cannot set an event damager when a direct entity is already set (if you think this is a Leaf bug, please report it at https://github.com/Winds-Studio/Leaf/issues)"); // Leaf - Rebrand
+         }
+         final DamageSource damageSource = this.copy();
+         damageSource.eventEntityDamager = entity;
+diff --git a/net/minecraft/world/level/chunk/storage/RegionFileStorage.java b/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
+index e47a91b1869801258d0db20c126722fb06522c80..3f0f0f54dc62c4979d8f44ed8867f1c3e64259f4 100644
+--- a/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
++++ b/net/minecraft/world/level/chunk/storage/RegionFileStorage.java
+@@ -309,7 +309,7 @@ public class RegionFileStorage implements AutoCloseable, ca.spottedleaf.moonrise
+ 
+     // Paper start
+     private static void printOversizedLog(String msg, Path file, int x, int z) {
+-        LOGGER.error("{} ({} - {},{}) Go clean it up to remove this message. /minecraft:tp {} 128 {} - DO NOT REPORT THIS TO PAPER - You may ask for help on Discord, but do not file an issue. These error messages can not be removed.", msg, file.toString().replaceAll(".+[\\\\/]", ""), x, z, x << 4, z << 4);
++        LOGGER.error("{} ({} - {},{}) Go clean it up to remove this message. /minecraft:tp {} 128 {} - DO NOT REPORT THIS TO PAPER OR LEAF - You may ask for help on Discord, but do not file an issue. These error messages can not be removed. - If you think this is a Leaf bug, please report it at https://github.com/Winds-Studio/Leaf/issues", msg, file.toString().replaceAll(".+[\\\\/]", ""), x, z, x << 4, z << 4); // Leaf - Rebrand
+     }
+ 
+     private static CompoundTag readOversizedChunk(RegionFile regionfile, ChunkPos chunkCoordinate) throws IOException {

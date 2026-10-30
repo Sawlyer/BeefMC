@@ -155,5 +155,6 @@ jobs:
           path: |
             source/**/build/reports/**
             source/**/build/test-results/**/*.xml
+            ${{ runner.temp }}/hopper-amount-*/logs/latest.log
           if-no-files-found: ignore
           retention-days: 14

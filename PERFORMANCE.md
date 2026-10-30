@@ -19,12 +19,12 @@ No BeefMC-specific memory or performance gain has been established. Results inhe
 ## 5-second TPS lagging check — not measured
 
 - **Affected versions:** 1.21.11, 26.1.2, and 26.3. Version 1.8.8 has no matching 5-second TPS API path.
-- **Implementation:** the tick loop reads only the 5-second TPS window instead of calculating and discarding the 1-minute, 5-minute, and 15-minute averages on every lagging check. No plugin API changes.
-- **Compatibility:** intended to preserve the same 5-second threshold value. Tick-rate changes use the current interval for the next check. Build and runtime compatibility checks remain pending.
+- **Implementation:** dedicated tick-loop helper calculates only 5-second TPS, skipping 1-minute, 5-minute, and 15-minute windows plus returned-array allocation.
+- **Compatibility:** same 5-second TPS formula, tick interval, threshold, and lock. No plugin API changes. Patch application and CI build passed; focused runtime threshold check not run.
 - **Measurement method:** compare BeefMC before and after with the short 1.21.11 steady-world profile: 25 bots, 60-second warm-up, 180-second sample, 2 sequential repetitions. Capture server CPU and memory separately; heap/GC and TPS/MSPT remain unavailable until their samplers are fixed.
 - **Environment and workload:** baseline environment above; no plugins, pre-generated shared world snapshot, Java 21.0.12.1, 4 GiB fixed heap.
-- **Results:** Not measured. The source PR reports a JFR hotspot reduction, but that result is not a BeefMC measurement and is not claimed here.
-- **Remaining checks:** apply patches and compile all three modern branches; complete the before/after profile on 1.21.11; verify plugin behavior and confirm no lag-threshold regression.
+- **Results:** Not measured. No CPU, memory, or MSPT gain claimed.
+- **Remaining checks:** focused lag-threshold behavior and before/after profile; plugin compatibility review.
 
 ## Compatibility fixes
 

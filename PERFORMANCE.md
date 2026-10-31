@@ -2,7 +2,7 @@
 
 This file records reproducible BeefMC-specific memory and performance comparisons. It is not a general development history.
 
-No general BeefMC CPU or memory gain has been established. The workload-specific `optimize-waypoint` result below does not demonstrate a release-wide improvement. Results inherited from PandaSpigot, Leaf, Paper, or other upstream projects are not BeefMC measurements.
+No general BeefMC CPU or memory gain has been established. Repeated `optimize-waypoint` comparisons show lower CPU and MSPT under synthetic movement loads, but no process-memory reduction or release-wide benefit. Results inherited from PandaSpigot, Leaf, Paper, or other upstream projects are not BeefMC measurements.
 
 ## Runtime qualification for v0.0.1
 
@@ -98,6 +98,19 @@ Mark missing measurements `Not measured`. Compare baseline and BeefMC on the sam
 - **Compatibility:** no plugins or real client were used; locator-bar rendering was not asserted. Setting remains experimental and defaults to `false`.
 - **Conclusion:** consistent sampled tick-time and waypoint-allocation reduction for this workload; CPU inconclusive; process memory unchanged. Keep default `false`; no general performance claim.
 - **Raw runs:** `Test Server/benchmark-50-20261030/results/1.21.11/`.
+
+## `optimize-waypoint` A/B — 1.21.11, 100 bots — 2026-10-31
+
+- **Status:** three paired runs completed against BeefMC v0.0.1; CPU and MSPT were lower in every pair. Process memory did not improve. This is a workload-specific result, not a release-wide claim.
+- **Artifact and configuration:** same v0.0.1 JAR in both variants, SHA-256 `c98f8031826246e15f4a2e386314b14458336491d907787eaadafef8b09e8392`; only `beefmc-global.yml` `optimize-waypoint` differed (`false` versus `true`).
+- **Environment and method:** Ryzen 9 9950X, 32 logical CPUs, 61.6 GiB RAM, Windows 11 build 26300, Temurin Java 21.0.12.1, `-Xms4G -Xmx4G`; 100 local Mineflayer bots on the same world snapshot, steady-world movement, 20-second warm-up and 60-second measurement, three pairs with order alternated. No plugins.
+- **Run validity:** all six measured runs recorded 100 bot spawns, 57–59 server CPU intervals, 12 MSPT samples, complete JFR, no server errors, and graceful shutdown. Rejected path/hash/whitelist attempts, an incomplete baseline run, and a complete but unpaired waypoint-on run were excluded.
+- **Server CPU:** mean of per-run median CPU was 1.001 core with the setting off versus 0.807 core with it on (−19.4%). Paired changes were −14.4%, −34.1%, and −2.7%.
+- **MSPT:** mean of 12 five-second readings per run was 13.19 ms off versus 8.20 ms on (−37.8%). Paired changes were −32.0%, −46.3%, and −34.2%.
+- **Process memory:** mean run-median working set was 4.027 GiB off versus 4.067 GiB on (+1.0%). Private bytes were 4.748 versus 4.747 GiB (−0.01%). No process-memory reduction established. JFR after-GC snapshots were sparse and uneven, so they do not support a retained-heap conclusion.
+- **JFR allocation samples:** estimated server-thread allocation traffic averaged 7,510 MiB off versus 3,264 MiB on (−56.5%). Estimated `ServerWaypointManager.update*` traffic averaged 1,978 versus 509 MiB (−74.3%). JFR weights are sampled estimates, not exact allocation totals or retained heap.
+- **Conclusion:** measured CPU and tick-time benefit under this 100-moving-bot workload; no RAM benefit. Keep the experimental setting opt-in until vanilla locator-bar behavior is checked. Plugin and proxy checks remain outside owner-approved scope.
+- **Raw runs:** `Test Server/benchmark-v0.0.2/waypoint-100/results/1.21.11/`. The initial whitelist-limited run and incomplete run are retained but excluded from results.
 
 ## BeefMC v0.0.1 vs Paper 1.21.11 build 132 — 2026-10-31
 

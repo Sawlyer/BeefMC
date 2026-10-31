@@ -30,6 +30,8 @@ Read `PERFORMANCE.md` before making memory or performance claims.
 
 For each BeefMC optimization, add or update a detailed measurement entry with affected versions, implementation, compatibility considerations, method, environment, workload, results, and remaining checks. Mark unmeasured results `Not measured`; never claim gains without reproducible measurements. Record neutral and negative results too. Keep README claims aligned with measured results.
 
+Maintain `docs/performance/OPTIMIZATION_EXPLORATION.md` as the research log. Record inspected hotspots, upstream sources, candidate ranking, rejected or deferred ideas, applied changes, compatibility risks, and validation state. Keep quantitative comparisons in `PERFORMANCE.md`; link the two records when an exploration becomes a measured optimization. Distinguish BeefMC evidence from upstream claims.
+
 ## BeefMC Kanban
 
 For substantial work, use a BeefMC issue; create one if none exists. New open issues are added to `BeefMC Kanban` in `Backlog`. Move tracked work to `In progress` when implementation starts. Link its BeefMC pull request to the issue with `Fixes #<number>`; project automation then sets `In review`. Closing the issue or merging its linked pull request moves work to `Done`.

@@ -2,7 +2,7 @@
 
 This file records reproducible BeefMC-specific memory and performance comparisons. It is not a general development history.
 
-No BeefMC-specific memory or performance gain has been established. Results inherited from PandaSpigot, Leaf, Paper, or other upstream projects are not BeefMC measurements.
+No general BeefMC CPU or memory gain has been established. The workload-specific `optimize-waypoint` result below does not demonstrate a release-wide improvement. Results inherited from PandaSpigot, Leaf, Paper, or other upstream projects are not BeefMC measurements.
 
 ## Runtime qualification for v0.0.1
 
@@ -34,8 +34,8 @@ No BeefMC-specific memory or performance gain has been established. Results inhe
 - **Compatibility:** formula, tick interval, threshold, and lock remain unchanged. No plugin API change. CI validated patch application, compilation, and available tests; runtime threshold behavior remains unverified.
 - **Measurement method:** planned repeated baseline/candidate profile on 1.21.11 using identical JAR, JVM, world snapshot, and focused workload. Capture process CPU, MSPT, heap/GC, and JFR when available.
 - **Environment and workload:** intended host is Windows 11, Ryzen 9 9950X, 61.6 GiB RAM, Java 21.0.12.1, 4 GiB fixed heap, no plugins, pre-generated world.
-- **Results:** Not measured. Latest local runtime attempt exited before readiness with `Unable to establish loopback connection` in `WEPollSelectorImpl`; it produced no player, CPU, heap, or MSPT comparison. A standalone selector test also fails in the Codex command environment. This does not establish a BeefMC regression; investigate execution environment before runtime measurement.
-- **Remaining checks:** reproduce the profile from a normal user PowerShell session; verify lag-threshold behavior; compare repeated baseline/candidate runs; test representative plugins before broad compatibility claims.
+- **Results:** Not measured. The local Test Server now starts from the benchmark harness, but completed profiles did not isolate the lag-check path or compare pre-change and post-change builds.
+- **Remaining checks:** run a focused lagging-workload comparison and verify threshold behavior. Plugin and proxy checks are outside owner-approved scope.
 
 ## Compatibility fixes
 
@@ -48,11 +48,11 @@ No BeefMC-specific memory or performance gain has been established. Results inhe
 - **Hypothesis:** Restore `spigot.yml` `hopper-amount` behavior when the optional sleeping block entity path is enabled. This fixes configuration compatibility; no CPU or memory gain is expected from this correction itself.
 - **Compatibility:** Default remains disabled. Sleeping mode with `hopper-amount: 1` retains one-item extraction. Larger values restore configured transfer count; partial destination capacity must restore uninserted items.
 - **Method:** Isolated RCON integration test with `hopper-amount: 5` and `hopper-transfer: 8`; check empty and nearly full destination hoppers with sleeping mode both disabled and enabled.
-- **Environment:** Linux GitHub Actions; Java 21 for 1.21.11, Java 25 for 26.1.2 and 26.3. Local Windows runtime unavailable because Java fails to create the loopback connection.
+- **Environment:** Linux GitHub Actions; Java 21 for 1.21.11, Java 25 for 26.1.2 and 26.3. Local Windows benchmark startup now works; hopper compatibility evidence remains from CI integration runs.
 - **Workload:** Synthetic hopper transfer, no players or plugins.
 - **Results:** Functional checks passed on all three versions, with sleeping mode both disabled and enabled. Empty destination: source 63 to 58, destination 0 to 5. Nearly full destination: source 63 to 59, destination 316 to 320; item count conserved. CPU and memory not measured.
 - **Conclusion:** Correctness fix only. No optimization claim.
-- **Remaining checks:** Production plugin compatibility and real-world hopper scenarios.
+- **Remaining checks:** Other container edge cases remain untested. Plugin checks are outside owner-approved scope; no general plugin compatibility claim follows.
 
 ## Entry template
 
@@ -72,3 +72,54 @@ No BeefMC-specific memory or performance gain has been established. Results inhe
 - **Remaining checks:** versions and scenarios not covered.
 
 Mark missing measurements `Not measured`. Compare baseline and BeefMC on the same machine, workload, and configuration. Do not generalize results beyond the conditions recorded.
+
+## 1.21.11 50-bot diagnostic profiles — 2026-10-30
+
+- **Status:** exploratory baseline; no before/after comparison and no gain established.
+- **Artifact:** BeefMC baseline JAR, SHA-256 `2df769b87dfa2710869e5cf79bfb3d8249a8aac4973763b45c03d94316800886`.
+- **Environment:** AMD Ryzen 9 9950X, 32 logical CPUs, 61.6 GiB RAM, Windows 11 build 26300, Temurin Java 21.0.12.1, `-Xms4G -Xmx4G`.
+- **Method:** 50 local Mineflayer bots, no plugins, same generated world snapshot, 20-second warm-up, 60-second measurement, one run per scenario. JFR recorded from JVM startup and filtered to the measured window. `/mspt` sampled every five seconds. Process CPU, working set, and private bytes sampled once per second.
+- **Steady-world:** 58 server samples; 57 CPU intervals; median CPU 0.528 core, p95 0.884 core; median working set 3.81 GiB and private bytes 4.70 GiB. Twelve 5-second MSPT averages had mean 6.87 ms, range 6.4–8.1 ms; highest reported 5-second-window maximum was 46 ms.
+- **Exploration:** 58 server samples; 57 CPU intervals; median CPU 0.542 core, p95 0.758 core; median working set 3.80 GiB and private bytes 4.69 GiB. Twelve 5-second MSPT averages had mean 6.46 ms, range 6.0–7.4 ms; highest reported 5-second-window maximum was 17.7 ms.
+- **JFR heap snapshots:** steady-world had two collections, with heap usage 2.69/2.86 GiB before and 0.53/0.51 GiB after GC; exploration had one collection, 2.87 GiB before and 0.50 GiB after GC. Pauses were about 7.3/7.2 ms and 5.7 ms. These are GC-time snapshots, not continuous heap measurements.
+- **JFR observations:** repeated server-thread work in `ChunkMap$TrackedEntity.updatePlayerMulti` and `ChunkEntitySlices`; allocation samples repeatedly pointed to `ServerWaypointManager.updatePlayer` / `updateWaypoint`, Guava `StandardTable` / `ImmutableSet`, and entity collision (`AABB.inflate`). JFR allocation weights estimate allocation traffic; they do not measure retained heap or exact allocation totals.
+- **Limits:** one run per scenario; no plugins; `jstat -gc` returned no valid samples. Working set/private bytes are process memory, not used Java heap. Results identify candidates only and do not establish comparative gains.
+
+## `optimize-waypoint` A/B — 1.21.11, 50 bots — 2026-10-30
+
+- **Status:** repeated workload-specific result; three runs per setting; no default change and no production-wide claim.
+- **Artifact:** same BeefMC JAR SHA-256 `2df769b87dfa2710869e5cf79bfb3d8249a8aac4973763b45c03d94316800886`, world snapshot, seed, Java 21.0.12.1, and `-Xms4G -Xmx4G`; only `optimize-waypoint` differed (`false` versus `true`).
+- **Method:** 50-bot movement workload, 20-second warm-up, 60-second measured window, 12 `/mspt` samples per run, JFR from JVM startup filtered to the measured window. Runs rotated order across three pairs. No plugins.
+- **Run validity:** all six runs completed and shut down gracefully, recorded 50 spawns, 59 server samples, 12 MSPT samples, complete JFR, and no server `[ERROR]` entries. `jstat` heap/GC remained unavailable.
+- **Server CPU:** mean of run medians was 0.575 core with the option off versus 0.563 core with it on (2.1% lower). Paired changes were +2.2%, −13.2%, and +6.0%; CPU effect is inconclusive.
+- **MSPT:** mean of per-run 5-second averages was 6.809 ms off versus 5.597 ms on (17.8% lower). All paired runs moved down: 18.3%, 22.2%, and 12.7%. Mean p95 was 7.667 versus 6.300 ms (17.8% lower). This is a short synthetic workload result.
+- **Process memory:** mean run-median working set was 3.849 versus 3.834 GiB; private bytes were 4.715 GiB for both. No memory reduction established.
+- **JFR allocation samples:** server-thread allocation weights averaged 2,585 MiB off versus 1,470 MiB on (estimated 43.1% lower allocation traffic). Samples with `ServerWaypointManager` stacks averaged 1,412 versus 281 MiB (estimated 80.1% lower for those stacks). These are sampled estimates, not exact totals or retained heap.
+- **Compatibility:** no plugins or real client were used; locator-bar rendering was not asserted. Setting remains experimental and defaults to `false`.
+- **Conclusion:** consistent sampled tick-time and waypoint-allocation reduction for this workload; CPU inconclusive; process memory unchanged. Keep default `false`; no general performance claim.
+- **Raw runs:** `Test Server/benchmark-50-20261030/results/1.21.11/`.
+
+## BeefMC v0.0.1 vs Paper 1.21.11 build 132 — 2026-10-31
+
+- **Status:** release JAR smoke and three paired 50-bot runs completed. CPU direction was inconsistent; no CPU or RAM gain established.
+- **Artifacts:** BeefMC v0.0.1 SHA-256 `c98f8031826246e15f4a2e386314b14458336491d907787eaadafef8b09e8392`; Paper build 132 SHA-256 `5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba`.
+- **Environment:** AMD Ryzen 9 9950X, 32 logical CPUs, 61.6 GiB RAM, Windows 11 build 26300, Temurin Java 21.0.12.1, `-Xms1G -Xmx4G`.
+- **Method:** 50 offline Mineflayer bots, steady-world, same snapshot, Java/JVM arguments and server properties except non-functional MOTD and generated management secret. `allow-flight=true` for synthetic movement. 20-second warm-up, 60-second measured window, three sequential repetitions per server with alternating order. One-bot smoke checks started, accepted a bot, and shut down cleanly on both JARs.
+- **Validity:** all six measured runs completed with 50 spawns, 59 server samples, 58 CPU intervals, no bot failures, no server `[ERROR]`, and graceful shutdown. An initial run with `allow-flight=false` was excluded after the synthetic bot was kicked for floating.
+- **Server CPU:** mean run average was 0.523 core BeefMC versus 0.554 core Paper (observed 5.6% lower); paired changes were −15.6%, −8.8%, and +8.9%. CPU result is inconclusive.
+- **Process RAM:** mean working set was 1.523 GiB BeefMC versus 1.512 GiB Paper (+11.3 MiB, +0.7%). Private bytes were 1.588 versus 1.575 GiB (+13.3 MiB, +0.8%). No RAM reduction measured.
+- **Limits:** `jstat` returned no valid heap/GC samples; TPS was not collected. No external plugins, Velocity routing, or production player workload tested. Comparison covers 1.21.11 only.
+- **Raw runs:** `Test Server/release-v0.0.1/results/1.21.11/`.
+
+## Temporary light-buffer reference cleanup A/B — 1.21.11 — 2026-10-31
+
+- **Status:** measured in three paired runs; no repeatable memory or performance benefit; excluded from v0.0.2 scope.
+- **Compared artifacts:** BeefMC v0.0.0 baseline SHA-256 `2df769b87dfa2710869e5cf79bfb3d8249a8aac4973763b45c03d94316800886`; PR #8 candidate SHA-256 `0518f8ffc8d4b632b5ca76f07ffd54b877d3c73d37e50e2d6f42f036ac3e5dc6`. Candidate PR changes only the 1.21.11 light-update patch and its performance record, on parent `d254aa0f9e`.
+- **Source matching:** an earlier exploratory run compared the PR candidate to v0.0.1, whose source included additional changes absent from the candidate. That comparison is excluded. The recorded comparison below uses the v0.0.0 artifact from the PR's base period and same source branch parent.
+- **Environment and workload:** Ryzen 9 9950X, Windows 11, Temurin Java 21.0.12.1, `-Xms4G -Xmx4G`, 50 Mineflayer bots, exploration scenario, shared snapshot, 20-second warm-up and 60-second measurement. Three sequential pairs with rotated order; no plugins.
+- **Run validity:** all six runs completed, shut down gracefully, recorded 50 spawns, 59 server samples and 12 MSPT samples, and had no server `[ERROR]` entries. JFR provided six after-GC snapshots per variant. `jstat` did not provide usable heap samples.
+- **Server CPU:** mean per-run median was 0.498 core baseline versus 0.440 core candidate (−11.8%). Paired changes were −18.0%, +9.4%, and −25.0%; CPU effect is inconclusive.
+- **MSPT:** mean of 12 five-second readings per run was 6.094 ms baseline versus 6.081 ms candidate (−0.2%). Paired changes were +2.5%, +4.4%, and −7.4%; no consistent change.
+- **Memory:** mean working-set median was 4,062 MiB baseline versus 4,212 MiB candidate (+150 MiB, +3.7%). Private bytes were 4,836 versus 4,822 MiB (−14 MiB, −0.3%). Mean JFR post-GC heap was 0.531 versus 0.558 GiB (+5.0%); each run contributed two snapshots. Variability and snapshot count do not establish a retained-heap regression or benefit.
+- **Conclusion:** no measurable memory reduction; CPU and MSPT effects vary by pair. Do not merge or claim benefit from this candidate. PR #8 is not part of the next release; PRs #9 and #10 remain unmeasured on their versions.
+- **Raw runs:** `Test Server/benchmark-v0.0.2/results-source-matched/1.21.11/`. The initial unmatched comparison remains under `Test Server/benchmark-v0.0.2/results/1.21.11/` and is not used for conclusions.

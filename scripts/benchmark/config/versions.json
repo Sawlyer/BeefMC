@@ -1,0 +1,6 @@
+{
+  "1.8.8": { "runtimeJava": 8, "clientVersion": "1.8.8", "clientProtocol": 47, "serverProtocol": 47 },
+  "1.21.11": { "runtimeJava": 21, "clientVersion": "1.21.11", "clientProtocol": 774, "serverProtocol": 774 },
+  "26.1.2": { "runtimeJava": 25, "clientVersion": "26.1", "clientProtocol": 775, "serverProtocol": 775 },
+  "26.3": { "runtimeJava": 25, "clientVersion": "26.1", "clientProtocol": 775, "serverProtocol": 777, "bridgeRequired": true, "bridge": "ViaProxy" }
+}

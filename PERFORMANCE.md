@@ -16,15 +16,17 @@ No BeefMC-specific memory or performance gain has been established. Results inhe
 - **Limits:** 465–468 of 480 expected process samples per run. `jstat` returned no valid heap/GC samples; TPS/MSPT were not captured. Workload used no plugins and kept server CPU below 0.14 core, too light to identify a useful CPU bottleneck. Plugin compatibility was not tested.
 - **Conclusion:** this records a 1.21.11 reference point only. CPU readings are close at low load; BeefMC shows no measured memory saving over Leaf or Paper. No optimization claim follows from this run.
 
-## 5-second TPS lagging check — not measured
+## 5-second TPS lagging check — merged, runtime gain not measured
 
+- **Status:** Implemented and merged on all three modern targets; GitHub CI build and test jobs passed. No server-wide CPU, memory, or MSPT gain measured.
+- **References:** [1.21.11 PR #4](https://github.com/Sawlyer/BeefMC/pull/4), [26.1.2 PR #5](https://github.com/Sawlyer/BeefMC/pull/5), [26.3 PR #6](https://github.com/Sawlyer/BeefMC/pull/6).
 - **Affected versions:** 1.21.11, 26.1.2, and 26.3. Version 1.8.8 has no matching 5-second TPS API path.
-- **Implementation:** dedicated tick-loop helper calculates only 5-second TPS, skipping 1-minute, 5-minute, and 15-minute windows plus returned-array allocation.
-- **Compatibility:** same 5-second TPS formula, tick interval, threshold, and lock. No plugin API changes. Patch application and CI build passed; focused runtime threshold check not run.
-- **Measurement method:** compare BeefMC before and after with the short 1.21.11 steady-world profile: 25 bots, 60-second warm-up, 180-second sample, 2 sequential repetitions. Capture server CPU and memory separately; heap/GC and TPS/MSPT remain unavailable until their samplers are fixed.
-- **Environment and workload:** baseline environment above; no plugins, pre-generated shared world snapshot, Java 21.0.12.1, 4 GiB fixed heap.
-- **Results:** Not measured. No CPU, memory, or MSPT gain claimed.
-- **Remaining checks:** focused lag-threshold behavior and before/after profile; plugin compatibility review.
+- **Implementation:** lag checks calculate only 5-second TPS instead of calculating all four TPS windows and allocating a four-value result array. Work reduction applies to this check path only; no whole-server percentage is inferred.
+- **Compatibility:** formula, tick interval, threshold, and lock remain unchanged. No plugin API change. CI validated patch application, compilation, and available tests; runtime threshold behavior remains unverified.
+- **Measurement method:** planned repeated baseline/candidate profile on 1.21.11 using identical JAR, JVM, world snapshot, and focused workload. Capture process CPU, MSPT, heap/GC, and JFR when available.
+- **Environment and workload:** intended host is Windows 11, Ryzen 9 9950X, 61.6 GiB RAM, Java 21.0.12.1, 4 GiB fixed heap, no plugins, pre-generated world.
+- **Results:** Not measured. Latest local runtime attempt exited before readiness with `Unable to establish loopback connection` in `WEPollSelectorImpl`; it produced no player, CPU, heap, or MSPT comparison. A standalone selector test also fails in the Codex command environment. This does not establish a BeefMC regression; investigate execution environment before runtime measurement.
+- **Remaining checks:** reproduce the profile from a normal user PowerShell session; verify lag-threshold behavior; compare repeated baseline/candidate runs; test representative plugins before broad compatibility claims.
 
 ## Compatibility fixes
 

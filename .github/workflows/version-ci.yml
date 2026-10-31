@@ -155,6 +155,8 @@ jobs:
           path: |
             source/**/build/reports/**
             source/**/build/test-results/**/*.xml
+            source/dist/BeefMC-*.jar
+            source/dist/BeefMC-*.jar.sha256
             ${{ runner.temp }}/hopper-amount-*/logs/latest.log
           if-no-files-found: ignore
           retention-days: 14

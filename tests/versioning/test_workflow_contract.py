@@ -16,12 +16,14 @@ class WorkflowContractTests(unittest.TestCase):
         dedicated_server = patch.split(
             "diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java", maxsplit=1
         )[1].split("\ndiff --git", maxsplit=1)[0]
-        added_lines = "\n".join(
-            line[1:] for line in dedicated_server.splitlines() if line.startswith("+") and not line.startswith("+++")
+        resulting_lines = "\n".join(
+            line[1:]
+            for line in dedicated_server.splitlines()
+            if line.startswith((" ", "+")) and not line.startswith(("+++", "++++"))
         )
         self.assertLess(
-            added_lines.index("PaperSpigotConfig.init"),
-            added_lines.index("PandaSpigotConfig.init"),
+            resulting_lines.index("PaperSpigotConfig.init"),
+            resulting_lines.index("PandaSpigotConfig.init"),
         )
 
     def test_public_contributor_text_does_not_expose_upstream_branding(self) -> None:

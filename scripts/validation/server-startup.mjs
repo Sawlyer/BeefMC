@@ -32,7 +32,7 @@ export async function runStartupSmoke({
   );
 
   return new Promise((resolve, reject) => {
-    const child = spawnProcess(javaPath, ['-jar', path.resolve(jarPath), '--nogui'], {
+    const child = spawnProcess(javaPath, ['-jar', path.resolve(jarPath)], {
       cwd: directory,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, TERM: 'dumb' },

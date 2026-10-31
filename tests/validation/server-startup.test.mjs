@@ -39,7 +39,7 @@ test('accepts EULA, waits for server readiness, then stops cleanly', async () =>
       shutdownTimeoutMs: 1000,
     });
 
-    assert.deepEqual(args, ['-jar', path.resolve('beefmc-test.jar'), '--nogui']);
+    assert.deepEqual(args, ['-jar', path.resolve('beefmc-test.jar')]);
     assert.equal(options.cwd, directory);
     assert.match(await readFile(path.join(directory, 'eula.txt'), 'utf8'), /eula=true/);
     assert.equal(result.exitCode, 0);

@@ -4,12 +4,19 @@ BeefMC currently targets Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3. Each versio
 
 | Minecraft | Branch | Base | Build JDK | Catalog status |
 |---|---|---|---:|---|
-| 1.8.8 | `version/1.8.8` | Legacy baseline | 17 | `build-checked` |
-| 1.21.11 | `version/1.21.11` | Modern baseline | 21 | `branch-ready` |
-| 26.1.2 | `version/26.1.2` | Modern baseline | 25 | `branch-ready` |
-| 26.3 | `main` | Modern baseline | 25 | `branch-ready` |
+| 1.8.8 | `version/1.8.8` | Legacy baseline | 17 | `runtime-checked` |
+| 1.21.11 | `version/1.21.11` | Modern baseline | 21 | `runtime-checked` |
+| 26.1.2 | `version/26.1.2` | Modern baseline | 25 | `runtime-checked` |
+| 26.3 | `main` | Modern baseline | 25 | `runtime-checked` |
 
-BeefMC does not describe branch-ready builds as production-ready. The active scope excludes 26.2, 26.1.3, and other Minecraft versions.
+`runtime-checked` records only the CI scenarios below. It does not mean production deployment or general plugin compatibility. The active scope excludes 26.2, 26.1.3, and other Minecraft versions.
+
+## Runtime evidence
+
+- 1.8.8: built with JDK 17, then started with Java 8 and shut down cleanly in the legacy smoke workflow.
+- 1.21.11, 26.1.2, and 26.3: built and packaged in targeted workflows; hopper transfer behavior passed with the sleeping optimization disabled and enabled.
+- The CI JAR and sidecar SHA-256 matched for each runtime run. The 1.8.8 artifact hash is `e5515f89f11c6a21bb33af32826142c2e507a460ba497d87ef6a43666593d8c1`.
+- Test instances contained no plugins. Plugin compatibility, player joins, proxy routing, sustained load, CPU, memory, and MSPT remain unmeasured.
 
 ## Branch and patch layout
 

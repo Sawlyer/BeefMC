@@ -45,10 +45,11 @@ index 0f4e8c767632430a4cda8905331e6cede4351566..c8eedbb0380e18b6a5deb9bdea313002
              bindAddress = new java.net.InetSocketAddress(inetaddress, this.R());
              }
 -            com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) options.valueOf("pandaspigot-settings"));
++            org.github.paperspigot.PaperSpigotConfig.init((File) options.valueOf("paper-settings"));
 +            com.hpfxd.pandaspigot.config.PandaSpigotConfig.init((File) options.valueOf("beefmc-settings"));
              // PandaSpigot end
              // PaperSpigot start
-             org.github.paperspigot.PaperSpigotConfig.init((File) options.valueOf("paper-settings"));
+-            org.github.paperspigot.PaperSpigotConfig.init((File) options.valueOf("paper-settings"));
 diff --git a/src/main/java/net/minecraft/server/TileEntitySign.java b/src/main/java/net/minecraft/server/TileEntitySign.java
 index 21423e552570adeb9601b760c9b7b107670e30b8..71d207e516b817ad7788d87d0d0220b0c901f80a 100644
 --- a/src/main/java/net/minecraft/server/TileEntitySign.java

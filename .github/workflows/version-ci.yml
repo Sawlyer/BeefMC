@@ -104,6 +104,28 @@ jobs:
         if: needs.resolve.outputs.build_family == 'legacy'
         working-directory: source
         run: ./gradlew build --stacktrace
+      - name: Create legacy runtime jar
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'legacy'
+        working-directory: source
+        run: ./beefmc jar
+      - name: Package legacy runtime jar
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'legacy'
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: |
+          python -m pip install --disable-pip-version-check -r tooling/scripts/versioning/requirements.txt
+          python tooling/scripts/versioning/release.py package v0.0.1 "$MINECRAFT_VERSION" --source-root source --catalog tooling/versions/catalog.yml
+      - name: Set up Java 8 for legacy runtime smoke test
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'legacy'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "8"
+      - name: Smoke test legacy server startup and shutdown
+        if: inputs.runtime_validation && needs.resolve.outputs.build_family == 'legacy'
+        env:
+          MINECRAFT_VERSION: ${{ needs.resolve.outputs.minecraft }}
+        run: node tooling/scripts/validation/server-startup.mjs "source/dist/BeefMC-${MINECRAFT_VERSION}-v0.0.1.jar" "$JAVA_HOME/bin/java" "$RUNNER_TEMP/beefmc-${MINECRAFT_VERSION}-smoke"
       - name: Apply modern patch set
         if: needs.resolve.outputs.build_family == 'modern'
         working-directory: source

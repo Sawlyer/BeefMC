@@ -16,13 +16,13 @@ This log tracks source research, profiling observations, optimization candidates
 - **Active versions:** 1.8.8, 1.21.11, 26.1.2, 26.3. Apply optimization work only where the source and build pipeline support it.
 - **Profiling reference:** 1.21.11, 50 local Mineflayer bots, no plugins, shared world snapshot, Temurin Java 21.0.12.1, fixed `-Xms4G -Xmx4G`, Ryzen 9 9950X, Windows 11 build 26300.
 - **Reference profiles:** steady-world and exploration, each one 20-second warm-up plus 60-second measured window. Full metrics and limits live in [`PERFORMANCE.md`](../../PERFORMANCE.md).
-- **Current status:** `optimize-waypoint` has a repeated workload-specific MSPT/allocation result; CPU and process RAM benefits are unproven. No new server patch has qualified for v0.0.2.
+- **Current status:** `optimize-waypoint` has repeated workload-specific MSPT/allocation improvements at 50 bots and CPU/MSPT/allocation improvements at 100 bots; process RAM did not improve. The setting remains opt-in pending vanilla locator-bar behavior checks. No new server patch has qualified for v0.0.2.
 
 ## Findings from BeefMC profiles
 
-The 50-bot profiles recorded frequent server-thread samples in `ChunkMap$TrackedEntity.updatePlayerMulti`, `ChunkEntitySlices$EntityCollectionBySection.getEntities`, `Entity.getBukkitEntity`, and Leaf's `ChunkCache.get`. Allocation samples repeatedly included `ServerWaypointManager.updatePlayer` / `updateWaypoint`, Guava `StandardTable` / `ImmutableSet`, and collision `AABB.inflate`.
+The 50- and 100-bot profiles recorded frequent server-thread samples in `ChunkMap$TrackedEntity.updatePlayerMulti`, `ChunkEntitySlices$EntityCollectionBySection.getEntities`, `Entity.getBukkitEntity`, and Leaf's `ChunkCache.get`. Baseline allocation samples repeatedly included `ServerWaypointManager.updatePlayer` / `updateWaypoint`, Guava `StandardTable` / `ImmutableSet`, and collision `AABB.inflate`. With `optimize-waypoint` enabled, waypoint frames fell in the sampled allocation profile and entity tracking/chunk lookup became more prominent.
 
-These are sampling observations, not exact CPU shares or allocation totals. The workload had no plugins, only one run per scenario, and low average tick time. Findings prioritize focused A/B tests; they do not justify broad rewrites or changed defaults.
+These are sampling observations, not exact CPU shares or allocation totals. The baseline profiles used no plugins; the initial scenario runs were single-run and low-load. The later 100-bot A/B raised baseline MSPT to about 12–14 ms, but remained synthetic. Findings prioritize focused A/B tests; they do not justify broad rewrites or changed defaults.
 
 The fixed 4 GiB heap had JFR post-GC snapshots near 0.50 GiB, while pre-GC snapshots reached 2.69–2.87 GiB. This does not prove a smaller production heap is safe: only a few collection points were captured, and the test omitted plugins and production data.
 
@@ -33,8 +33,8 @@ The fixed 4 GiB heap had JFR post-GC snapshots near 0.50 GiB, while pre-GC snaps
 - **Evidence:** waypoint update methods appear repeatedly in allocation samples. BeefMC already carries Leaf's experimental `optimize-waypoint` switch, default `false`.
 - **Expected effect:** avoid some waypoint tracking work when entity movement does not change block position. Likely workload-specific; strongest case is many tracked entities and locator-bar updates.
 - **Compatibility risk:** low-to-medium, because locator-bar visibility and tracking are player-visible behavior. Setting must remain opt-in unless tests establish correctness and compatibility.
-- **Status:** three runs per setting complete. MSPT averages and JFR waypoint-stack allocation weights decreased in every pair; CPU result mixed and process memory unchanged. Promising for this workload, not proof for production. See `PERFORMANCE.md` for per-run figures.
-- **Decision:** keep default `false`. Locator-bar behavior with a real client remains unverified. Owner excluded plugin compatibility checks from this roadmap.
+- **Status:** three pairs per workload complete at 50 and 100 moving bots. At 100 bots, CPU median fell 14.4%, 34.1%, and 2.7%; MSPT fell 32.0%, 46.3%, and 34.2%. Estimated total server-thread allocation traffic fell 56.5%; process working set rose 1.0% and private bytes were unchanged. See `PERFORMANCE.md` for measurements and limits.
+- **Decision:** keep default `false`. Performance benefit is established only for these synthetic movement workloads; locator-bar behavior with a vanilla client remains unverified. Owner excluded plugin compatibility checks from this roadmap.
 - **Review note:** Leaf's upstream commit [`3606c2f`](https://github.com/Winds-Studio/Leaf/commit/3606c2f) corrected a condition so waypoint connections can be cleared when the locator bar is disabled. Verify this behavior in BeefMC's exact patch before accepting any result.
 
 ### P2 — Entity tracking and nearby-entity lookup
@@ -138,9 +138,9 @@ No new server behavior change was applied during this audit. The source-matched 
 
 ## Next work
 
-1. Profile entity tracking, chunk loading/generation, and container/redstone work as separate workloads before proposing another source change.
-2. Review upstream optimization PRs only where supported versions and BeefMC workload match; do not import version-specific or unmeasured work as a release quick win.
-3. Keep plugin, proxy, and real-client tests omitted per owner decision; record those limits without claiming compatibility evidence.
+1. Check `optimize-waypoint` locator-bar behavior with a vanilla client or packet-level runtime assertion; keep plugin/proxy checks omitted per owner decision.
+2. Profile entity tracking, chunk loading/generation, and container/redstone work as separate workloads before proposing another source change.
+3. Review upstream optimization PRs only where supported versions and BeefMC workload match; do not import version-specific or unmeasured work as a release quick win.
 4. Select next release candidate only after repeated BeefMC measurements show relevant improvement without unacceptable regressions.
 
 ## Research log
@@ -150,3 +150,4 @@ No new server behavior change was applied during this audit. The source-matched 
 - **2026-10-30:** verified generated config directory differences; only `optimize-waypoint` differed in server configuration. JFR profiling after waypoint optimization shifted leading samples to entity lookup/tracking and chunk-cache paths.
 - **2026-10-31:** added `jdk.GCHeapSummary` parsing to the benchmark harness after `jstat` produced no samples. Six source-matched 1.21.11 light-buffer runs completed; memory and performance benefit was not demonstrated, so patch was excluded from release scope.
 - **2026-10-31:** reviewed open Leaf optimization PRs #972, #961, #928, #919, #854, and #537. No immediate cross-version candidate met BeefMC evidence and compatibility criteria; see PR inventory in this log.
+- **2026-10-31:** completed three paired 100-bot `optimize-waypoint` runs on the v0.0.1 JAR. CPU and MSPT decreased in all pairs; process memory did not. JFR sampling showed lower estimated waypoint allocation traffic. Keep the setting opt-in until vanilla locator behavior is checked.

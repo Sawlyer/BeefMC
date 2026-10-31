@@ -109,8 +109,16 @@ Mark missing measurements `Not measured`. Compare baseline and BeefMC on the sam
 - **MSPT:** mean of 12 five-second readings per run was 13.19 ms off versus 8.20 ms on (−37.8%). Paired changes were −32.0%, −46.3%, and −34.2%.
 - **Process memory:** mean run-median working set was 4.027 GiB off versus 4.067 GiB on (+1.0%). Private bytes were 4.748 versus 4.747 GiB (−0.01%). No process-memory reduction established. JFR after-GC snapshots were sparse and uneven, so they do not support a retained-heap conclusion.
 - **JFR allocation samples:** estimated server-thread allocation traffic averaged 7,510 MiB off versus 3,264 MiB on (−56.5%). Estimated `ServerWaypointManager.update*` traffic averaged 1,978 versus 509 MiB (−74.3%). JFR weights are sampled estimates, not exact allocation totals or retained heap.
-- **Conclusion:** measured CPU and tick-time benefit under this 100-moving-bot workload; no RAM benefit. Keep the experimental setting opt-in until vanilla locator-bar behavior is checked. Plugin and proxy checks remain outside owner-approved scope.
+- **Conclusion:** measured CPU and tick-time benefit under this 100-moving-bot workload; no RAM benefit. A separate protocol check below found matching vanilla waypoint packets with the setting on and off. The setting is enabled by default for newly generated modern configs; existing explicit config values remain unchanged. This remains a synthetic workload result, not a release-wide gain. Plugin and proxy checks remain outside owner-approved scope.
 - **Raw runs:** `Test Server/benchmark-v0.0.2/waypoint-100/results/1.21.11/`. The initial whitelist-limited run and incomplete run are retained but excluded from results.
+
+## `optimize-waypoint` vanilla protocol check — 1.21.11 — 2026-10-31
+
+- **Method:** started the same v0.0.1 JAR four times with two local Mineflayer clients, toggling `optimize-waypoint` and the vanilla `locator_bar` gamerule. Moved one client through three positions while recording clientbound `tracked_waypoint` packets on both clients. No plugins.
+- **Locator bar enabled:** baseline and optimized variants emitted matching packet sequences: observer saw 10 packets and moving player saw 2. Both included waypoint tracking and movement updates.
+- **Locator bar disabled:** both variants emitted zero `tracked_waypoint` packets.
+- **Validity:** both clients spawned in every run; all four runs shut down cleanly; no server errors. This confirms protocol-level waypoint behavior for this 1.21.11 scenario. It does not verify vanilla GUI rendering or plugin compatibility.
+- **Config behavior:** new modern configs default `performance.optimize-waypoint` to `true` for 1.21.11, 26.1.2, and 26.3. Existing configs with an explicit value keep that value; set it to `true` manually to opt an existing server in.
 
 ## BeefMC v0.0.1 vs Paper 1.21.11 build 132 — 2026-10-31
 

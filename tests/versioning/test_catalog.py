@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import copy
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "versioning"))
 
 from catalog import CatalogError, entry_for_branch, load_catalog, load_upstream_manifest, matrix_for_selector, release_version_for_tag, validate_catalog
 from release import package_asset, select_jar, validate_release
-import tempfile
 
 
 class CatalogValidationTests(unittest.TestCase):
@@ -89,8 +91,12 @@ class CatalogValidationTests(unittest.TestCase):
                 release_version_for_tag(tag)
 
     def test_release_is_blocked_until_runtime_checks_pass(self) -> None:
-        with self.assertRaisesRegex(CatalogError, "release blocked while status is 'build-checked'"):
-            validate_release("v1.0.0", "0" * 40)
+        data = self.mutate(lambda value: value["versions"][0].update(status="build-checked"))
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog_path = Path(temporary) / "catalog.yml"
+            catalog_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+            with self.assertRaisesRegex(CatalogError, "release blocked while status is 'build-checked'"):
+                validate_release("v1.0.0", "0" * 40, source_root=ROOT, catalog_path=catalog_path)
 
     def test_exactly_one_version_uses_main(self) -> None:
         data = self.mutate(lambda value: value["versions"][1].update(branch="main"))

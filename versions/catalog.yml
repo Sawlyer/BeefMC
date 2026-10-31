@@ -17,7 +17,7 @@ versions:
       check_command: "./gradlew build --stacktrace"
       jar_command: "./beefmc jar"
       jar_path: "beefmc-1.8.8.jar"
-    status: build-checked
+    status: runtime-checked
     release:
       tag_pattern: "v{release}"
       asset_name: "BeefMC-1.8.8-v{release}.jar"
@@ -38,7 +38,7 @@ versions:
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createMojmapPaperclipJar"
       jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
-    status: branch-ready
+    status: runtime-checked
     release:
       tag_pattern: "v{release}"
       asset_name: "BeefMC-1.21.11-v{release}.jar"
@@ -59,7 +59,7 @@ versions:
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createPaperclipJar"
       jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
-    status: branch-ready
+    status: runtime-checked
     release:
       tag_pattern: "v{release}"
       asset_name: "BeefMC-26.1.2-v{release}.jar"
@@ -80,7 +80,7 @@ versions:
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createPaperclipJar"
       jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
-    status: branch-ready
+    status: runtime-checked
     release:
       tag_pattern: "v{release}"
       asset_name: "BeefMC-26.3-v{release}.jar"

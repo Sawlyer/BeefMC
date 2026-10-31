@@ -4,6 +4,15 @@ This file records reproducible BeefMC-specific memory and performance comparison
 
 No BeefMC-specific memory or performance gain has been established. Results inherited from PandaSpigot, Leaf, Paper, or other upstream projects are not BeefMC measurements.
 
+## Runtime qualification for v0.0.1
+
+- **Status:** Targeted CI runtime checks passed for all four catalog versions. These checks establish only the listed behaviors; they do not establish server-wide performance gains or general plugin compatibility.
+- **1.8.8:** [runtime workflow #41197321808](https://github.com/Sawlyer/BeefMC/actions/runs/41197321808) built the legacy jar with JDK 17, launched it with Java 8, observed startup readiness, and shut it down cleanly. Downloaded JAR SHA-256 matched its sidecar: `e5515f89f11c6a21bb33af32826142c2e507a460ba497d87ef6a43666593d8c1`.
+- **1.21.11:** [runtime workflow #41149392437](https://github.com/Sawlyer/BeefMC/actions/runs/41149392437) built and packaged the jar; hopper integration checks passed with the sleeping optimization off and on. Downloaded JAR SHA-256 verified: `21126391863d94e5aa8aab5eeda5edf36e6fff5df2c7c784d126ea0e739e8684`.
+- **26.1.2:** [runtime workflow #41192097663](https://github.com/Sawlyer/BeefMC/actions/runs/41192097663) built and packaged the jar; both hopper integration modes passed. Downloaded JAR SHA-256 verified: `7bfcb9d326e5940516a01af06d8519949c9377fcdc7c746723ab59532baa99ea`.
+- **26.3:** [runtime workflow #41192872053](https://github.com/Sawlyer/BeefMC/actions/runs/41192872053) built and packaged the jar; both hopper integration modes passed. Downloaded JAR SHA-256 verified: `4c128e9ba7ebb91f308bc540e9e1f801e68a5d8e569390dcfdde0c3306c5c127`.
+- **Limits:** GitHub-hosted CI, no plugins or player workload. No CPU, RAM, MSPT, TPS, proxy-routing, or broad gameplay measurements. These checks do not justify a performance claim.
+
 ## 1.21.11 steady-world baseline — 2026-10-30
 
 - **Status:** reference baseline only; no gain demonstrated.

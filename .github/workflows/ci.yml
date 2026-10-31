@@ -18,6 +18,11 @@ on:
         required: true
         default: all
         type: string
+      runtime_validation:
+        description: Build a JAR and run focused runtime checks for one modern version
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -56,11 +61,19 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.base_ref }}
           INPUT_VERSION: ${{ inputs.version }}
+          INPUT_RUNTIME_VALIDATION: ${{ inputs.runtime_validation }}
           TOOLING_REF: ${{ github.sha }}
         run: |
           if [ "$EVENT_NAME" = "schedule" ]; then
             python scripts/versioning/catalog.py matrix all >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [[ "$INPUT_RUNTIME_VALIDATION" == "true" ]]; then
+              runtime_matrix="$(python scripts/versioning/catalog.py matrix "$INPUT_VERSION")"
+              if ! printf '%s' "${runtime_matrix#matrix=}" | python -c 'import json, sys; targets = json.load(sys.stdin)["include"]; sys.exit(0 if len(targets) == 1 and targets[0]["build_family"] == "modern" else 1)'; then
+                echo "Runtime validation requires a single modern version target." >&2
+                exit 1
+              fi
+            fi
             python scripts/versioning/catalog.py matrix "$INPUT_VERSION" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" = "pull_request" ]; then
             if python scripts/versioning/catalog.py resolve-branch "$HEAD_REF" >/dev/null 2>&1; then
@@ -85,6 +98,6 @@ jobs:
       source_ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || matrix.branch }}
       version_branch: ${{ matrix.branch }}
       tooling_ref: ${{ needs.validate.outputs.tooling_ref }}
-      runtime_validation: false
+      runtime_validation: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_validation }}
     permissions:
       contents: read

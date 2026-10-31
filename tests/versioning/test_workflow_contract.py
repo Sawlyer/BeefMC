@@ -34,6 +34,35 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("fromJSON(needs.validate.outputs.matrix)", workflow["jobs"]["build"]["strategy"]["matrix"])
         self.assertIn("github.event.pull_request.head.sha", (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
 
+    def test_manual_ci_can_build_runtime_jar_for_one_modern_version(self) -> None:
+        ci_path = ROOT / ".github/workflows/ci.yml"
+        ci_workflow = yaml.load(ci_path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        runtime_input = ci_workflow["on"]["workflow_dispatch"]["inputs"]["runtime_validation"]
+        self.assertEqual(runtime_input["type"], "boolean")
+        self.assertEqual(runtime_input["default"], "false")
+        self.assertIn("one modern version", runtime_input["description"])
+        choose_targets = next(
+            step["run"] for step in ci_workflow["jobs"]["validate"]["steps"]
+            if step.get("name") == "Choose CI targets"
+        )
+        self.assertIn("INPUT_RUNTIME_VALIDATION", choose_targets)
+        self.assertIn("single modern version", choose_targets)
+        self.assertEqual(
+            ci_workflow["jobs"]["build"]["with"]["runtime_validation"],
+            "${{ github.event_name == 'workflow_dispatch' && inputs.runtime_validation }}",
+        )
+
+        version_ci = yaml.load(
+            (ROOT / ".github/workflows/version-ci.yml").read_text(encoding="utf-8"),
+            Loader=yaml.BaseLoader,
+        )
+        upload = next(
+            step for step in version_ci["jobs"]["build"]["steps"]
+            if step.get("name") == "Upload build and test reports"
+        )
+        self.assertIn("source/dist/BeefMC-*.jar", upload["with"]["path"])
+        self.assertIn("source/dist/BeefMC-*.jar.sha256", upload["with"]["path"])
+
     def test_visible_workflow_labels_use_beefmc_names(self) -> None:
         legacy_names = re.compile(r"\b(?:PandaSpigot|Leaf|Paperweight|Paper)\b", re.IGNORECASE)
         for relative_path in (

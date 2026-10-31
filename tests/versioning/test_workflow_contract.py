@@ -11,6 +11,21 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_legacy_paper_settings_are_loaded_before_beefmc_config(self) -> None:
+        patch = (ROOT / "patches/server/0141-BeefMC-1.8.8-branding-follow-up.patch").read_text(encoding="utf-8")
+        dedicated_server = patch.split(
+            "diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java", maxsplit=1
+        )[1].split("\ndiff --git", maxsplit=1)[0]
+        resulting_lines = "\n".join(
+            line[1:]
+            for line in dedicated_server.splitlines()
+            if line.startswith((" ", "+")) and not line.startswith(("+++", "++++"))
+        )
+        self.assertLess(
+            resulting_lines.index("PaperSpigotConfig.init"),
+            resulting_lines.index("PandaSpigotConfig.init"),
+        )
+
     def test_public_contributor_text_does_not_expose_upstream_branding(self) -> None:
         legacy_names = re.compile(r"\b(?:PandaSpigot|Leaf|Paper)\b", re.IGNORECASE)
         for relative_path in (

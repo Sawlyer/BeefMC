@@ -19,7 +19,7 @@ on:
         default: all
         type: string
       runtime_validation:
-        description: Build a JAR and run focused runtime checks for one modern version
+        description: Build a JAR and run focused runtime checks for one supported version
         required: false
         default: false
         type: boolean
@@ -53,6 +53,7 @@ jobs:
         run: |
           python scripts/versioning/catalog.py validate
           python -m unittest discover -s tests/versioning -v
+          node --test tests/validation/server-startup.test.mjs
       - name: Choose CI targets
         id: targets
         env:
@@ -69,8 +70,8 @@ jobs:
           elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             if [[ "$INPUT_RUNTIME_VALIDATION" == "true" ]]; then
               runtime_matrix="$(python scripts/versioning/catalog.py matrix "$INPUT_VERSION")"
-              if ! printf '%s' "${runtime_matrix#matrix=}" | python -c 'import json, sys; targets = json.load(sys.stdin)["include"]; sys.exit(0 if len(targets) == 1 and targets[0]["build_family"] == "modern" else 1)'; then
-                echo "Runtime validation requires a single modern version target." >&2
+              if ! printf '%s' "${runtime_matrix#matrix=}" | python -c 'import json, sys; targets = json.load(sys.stdin)["include"]; sys.exit(0 if len(targets) == 1 else 1)'; then
+                echo "Runtime validation requires a single supported version target." >&2
                 exit 1
               fi
             fi

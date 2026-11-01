@@ -17,7 +17,7 @@
      gitFilePatches = false
  
 +    // Leaf start - project setup
-+    val beefmcFork = forks.register("beefmc") {
++    val beefmcFork = forks.register("leaf") {
 +        upstream.patchDir("paperServer") {
 +            upstreamPath = "paper-server"
 +            excludes = setOf("src/minecraft", "patches", "build.gradle.kts")

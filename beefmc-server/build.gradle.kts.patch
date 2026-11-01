@@ -18,7 +18,7 @@
  
 +    // Leaf start - project setup
 +    val beefmcFork = forks.register("leaf") {
-+        featurePatchDir.set(rootDirectory.dir("beefmc-server/minecraft-patches"))
++        featurePatchDir.set(rootDirectory.dir("beefmc-server/minecraft-patches/features"))
 +        upstream.patchDir("paperServer") {
 +            upstreamPath = "paper-server"
 +            excludes = setOf("src/minecraft", "patches", "build.gradle.kts")

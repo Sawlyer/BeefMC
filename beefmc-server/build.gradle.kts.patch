@@ -4,7 +4,7 @@
  }
  
  val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
-+val leafMavenPublicUrl = "https://maven.leafmc.one/snapshots/" // Leaf - project setup - Add publish repo
++val upstreamSnapshotRepositoryUrl = "https://maven.leafmc.one/snapshots/" // Leaf - project setup - Add dependency repository
  
  dependencies {
      mache("io.papermc:mache:1.21.11+build.1")
@@ -17,16 +17,16 @@
      gitFilePatches = false
  
 +    // Leaf start - project setup
-+    val leaf = forks.register("leaf") {
++    val beefmcFork = forks.register("beefmc") {
 +        upstream.patchDir("paperServer") {
 +            upstreamPath = "paper-server"
 +            excludes = setOf("src/minecraft", "patches", "build.gradle.kts")
-+            patchesDir = rootDirectory.dir("leaf-server/paper-patches")
++            patchesDir = rootDirectory.dir("beefmc-server/paper-patches")
 +            outputDir = rootDirectory.dir("paper-server")
 +        }
 +    }
 +
-+    activeFork = leaf
++    activeFork = beefmcFork
 +    // Leaf end - project setup
 +
      spigot {
@@ -36,7 +36,7 @@
      libraryRepositories.addAll(
          "https://repo.maven.apache.org/maven2/",
          paperMavenPublicUrl,
-+        leafMavenPublicUrl // Leaf - project setup - Add publish repo
++        upstreamSnapshotRepositoryUrl // Leaf - project setup - Add dependency repository
      )
  }
  

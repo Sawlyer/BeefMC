@@ -1,6 +1,6 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -12,16 +_,30 @@
+@@ -12,16 +_,31 @@
  }
  
  val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"

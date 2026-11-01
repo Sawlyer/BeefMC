@@ -1,0 +1,71 @@
+--- a/net/minecraft/server/waypoints/ServerWaypointManager.java
++++ b/net/minecraft/server/waypoints/ServerWaypointManager.java
+@@ -4,8 +4,8 @@
+-import com.google.common.collect.ImmutableSet;
+ import com.google.common.collect.Sets;
+ import com.google.common.collect.Table;
+ import com.google.common.collect.Tables;
+ import com.google.common.collect.Sets.SetView;
+ import java.util.HashSet;
++import java.util.Iterator;
+ import java.util.Map;
+ import java.util.Set;
+@@ -45,7 +45,11 @@
+             SetView<ServerPlayer> potentialPlayers = Sets.difference(this.players, playerConnection.keySet());
+ 
+-            for (Entry<ServerPlayer, WaypointTransmitter.Connection> waypointConnection : ImmutableSet.copyOf(playerConnection.entrySet())) {
+-                this.updateConnection(waypointConnection.getKey(), waypoint, waypointConnection.getValue());
++            Iterator<Entry<ServerPlayer, WaypointTransmitter.Connection>> iterator = playerConnection.entrySet().iterator();
++            while (iterator.hasNext()) {
++                Entry<ServerPlayer, WaypointTransmitter.Connection> waypointConnection = iterator.next();
++                if (!this.updateConnection(waypointConnection.getKey(), waypoint, waypointConnection.getValue())) {
++                    iterator.remove();
++                }
+             }
+ 
+             for (ServerPlayer player : potentialPlayers) {
+@@ -80,8 +84,12 @@
+         Map<WaypointTransmitter, WaypointTransmitter.Connection> waypointConnections = this.connections.row(player);
+         SetView<WaypointTransmitter> potentialWaypoints = Sets.difference(this.waypoints, waypointConnections.keySet());
+ 
+-        for (Entry<WaypointTransmitter, WaypointTransmitter.Connection> waypointConnection : ImmutableSet.copyOf(waypointConnections.entrySet())) {
+-            this.updateConnection(player, waypointConnection.getKey(), waypointConnection.getValue());
++        Iterator<WaypointTransmitter> iterator = waypointConnections.keySet().iterator();
++        while (iterator.hasNext()) {
++            WaypointTransmitter waypoint = iterator.next();
++            if (!this.updateConnection(player, waypoint, waypointConnections.get(waypoint))) {
++                iterator.remove();
++            }
+         }
+ 
+         for (WaypointTransmitter waypoint : potentialWaypoints) {
+@@ -137,21 +145,24 @@
+         }
+     }
+ 
+-    private void updateConnection(final ServerPlayer player, final WaypointTransmitter waypoint, final WaypointTransmitter.Connection connection) {
++    private boolean updateConnection(final ServerPlayer player, final WaypointTransmitter waypoint, final WaypointTransmitter.Connection connection) {
+         if (player != waypoint) {
+             if (isLocatorBarEnabledFor(player)) {
+                 if (!connection.isBroken()) {
+                     connection.update();
+                 } else {
+-                    waypoint.makeWaypointConnectionWith(player).ifPresentOrElse(newConnection -> {
++                    java.util.Optional<WaypointTransmitter.Connection> replacement = waypoint.makeWaypointConnectionWith(player);
++                    if (replacement.isPresent()) {
++                        WaypointTransmitter.Connection newConnection = replacement.get();
+                         newConnection.connect();
+                         this.connections.put(player, waypoint, newConnection);
+-                    }, () -> {
++                    } else {
+                         connection.disconnect();
+-                        this.connections.remove(player, waypoint);
+-                    });
++                        return false;
++                    }
+                 }
+             }
+         }
++        return true;
+     }
+ }

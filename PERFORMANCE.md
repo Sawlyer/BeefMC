@@ -144,3 +144,17 @@ Mark missing measurements `Not measured`. Compare baseline and BeefMC on the sam
 - **Memory:** mean working-set median was 4,062 MiB baseline versus 4,212 MiB candidate (+150 MiB, +3.7%). Private bytes were 4,836 versus 4,822 MiB (−14 MiB, −0.3%). Mean JFR post-GC heap was 0.531 versus 0.558 GiB (+5.0%); each run contributed two snapshots. Variability and snapshot count do not establish a retained-heap regression or benefit.
 - **Conclusion:** no measurable memory reduction; CPU and MSPT effects vary by pair. Do not merge or claim benefit from this candidate. PR #8 is not part of the next release; PRs #9 and #10 remain unmeasured on their versions.
 - **Raw runs:** `Test Server/benchmark-v0.0.2/results-source-matched/1.21.11/`. The initial unmatched comparison remains under `Test Server/benchmark-v0.0.2/results/1.21.11/` and is not used for conclusions.
+
+## Waypoint connection iteration — 1.21.11 — 2026-11-01
+
+- **Status:** three paired runs completed against the exact BeefMC v0.0.2 1.21.11 release JAR. CPU median and MSPT favored the candidate overall; process memory did not show a stable reduction. Workload-specific only.
+- **Artifacts:** baseline BeefMC v0.0.2 SHA-256 `914684fdfe05fc17c80cc43681f378045df9936c7d0e79d838ef5a381910c940`; candidate with iterator removal in both waypoint update paths SHA-256 `bfb8550363d789acdc47562c5a4598c5094cc29c229574650a72f7050784e47a`.
+- **Environment:** AMD Ryzen 9 9950X, 32 logical CPUs, 61.6 GiB RAM, Windows 11 build 26300, Temurin Java 21.0.12.1, `-Xms512M -Xmx4G`.
+- **Method:** 100 local Mineflayer bots, steady-world workload, same pre-generated world snapshot and seed `7402981`, 500 benchmark pigs, `allow-flight=true` on both instances, 20-second warm-up and 60-second measurement. Three sequential pairs with order alternated. No plugins or proxy.
+- **Validity:** all six measured runs completed with graceful shutdown, 100 bot spawns, 58–59 server CPU intervals, 12 MSPT samples and no server `[ERROR]` entries. The initial baseline run that kicked a bot for floating while `allow-flight=false` was excluded; corrected configuration matched across both variants. No JFR was recorded for this final candidate.
+- **Server CPU:** mean of per-run median CPU was 1.085 cores baseline versus 1.032 candidate (−4.9%). Pair changes were +1.6%, −9.3% and −6.0%; one pair moved slightly upward, so treat CPU effect as modest and workload-specific.
+- **MSPT:** mean of per-run 12-sample MSPT averages was 9.958 ms baseline versus 9.342 ms candidate (−6.2%). All three pairs improved: −6.1%, −5.5% and −7.0%.
+- **Process memory:** mean run-median working set was 2.239 GiB baseline versus 2.219 GiB candidate (−0.9%); private bytes were 2.301 versus 2.282 GiB (−0.8%). One pair was about 16% higher on the candidate and the other two lower. These readings do not establish a RAM reduction or retained-heap change.
+- **Implementation:** replace per-update `ImmutableSet.copyOf` snapshots with direct map iteration and iterator removal in `ServerWaypointManager.updatePlayer` and `updateWaypoint`. No config, API, or packet change.
+- **Conclusion:** retain as a release candidate for the measured tick-time improvement. Do not claim lower RAM or a general CPU gain. Plugin compatibility and real-client behavior were not retested for this source change.
+- **Raw runs:** `Test Server/benchmark-v0.0.3/waypoint-release-qualification/results-both-iterators/1.21.11/`.

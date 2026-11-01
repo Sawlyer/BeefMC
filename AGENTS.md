@@ -38,7 +38,7 @@ For substantial work, use a BeefMC issue; create one if none exists. New open is
 
 ## Pull request review
 
-Before merging, check successful BeefMC CI, review the complete diff, and confirm compatibility risks and generated patches. A second human approval is welcome when available but is not required for the project owner. Codex review is optional and advisory: request it by sharing the BeefMC pull request link in a Codex chat. It does not replace CI or owner review. GitHub branch protection is not configured until required checks are enabled in repository settings.
+Before merging, check successful BeefMC CI, review the complete diff, and confirm compatibility risks and generated patches. A second human approval is welcome when available but is not required for the project owner. GitHub branch protection is not configured until required checks are enabled in repository settings.
 
 ## Keep Project Communication Human
 

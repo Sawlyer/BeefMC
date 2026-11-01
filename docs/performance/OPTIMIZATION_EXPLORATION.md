@@ -146,9 +146,18 @@ No new server behavior change was applied during this audit. The source-matched 
 ## Research log
 
 - **2026-10-30:** reviewed the 1.21.11 50-bot JFR samples, server CPU/MSPT and memory data, active BeefMC patch coverage, Leaf waypoint condition fix, Leaf async-tracker NPC report, and SparklyPaper's documented patch targets. Added this log and linked future updates through `AGENTS.md`.
-- **2026-10-30:** initial waypoint A/B and one confirmation pair completed from normal PowerShell. Six runs passed validity checks. MSPT and waypoint-stack JFR allocation weights moved down in all three pairs; CPU and process-memory evidence does not establish a general gain. Codex-launched attempt before these runs failed on Windows loopback selector initialization and produced no valid samples.
+- **2026-10-30:** initial waypoint A/B and one confirmation pair completed from normal PowerShell. Six runs passed validity checks. MSPT and waypoint-stack JFR allocation weights moved down in all three pairs; CPU and process-memory evidence does not establish a general gain. An earlier attempt before these runs failed on Windows loopback selector initialization and produced no valid samples.
 - **2026-10-30:** verified generated config directory differences; only `optimize-waypoint` differed in server configuration. JFR profiling after waypoint optimization shifted leading samples to entity lookup/tracking and chunk-cache paths.
 - **2026-10-31:** added `jdk.GCHeapSummary` parsing to the benchmark harness after `jstat` produced no samples. Six source-matched 1.21.11 light-buffer runs completed; memory and performance benefit was not demonstrated, so patch was excluded from release scope.
 - **2026-10-31:** reviewed open Leaf optimization PRs #972, #961, #928, #919, #854, and #537. No immediate cross-version candidate met BeefMC evidence and compatibility criteria; see PR inventory in this log.
 - **2026-10-31:** completed three paired 100-bot `optimize-waypoint` runs on the v0.0.1 JAR. CPU and MSPT decreased in all pairs; process memory did not. JFR sampling showed lower estimated waypoint allocation traffic. Keep the setting opt-in until vanilla locator behavior is checked.
 - **2026-10-31:** packet-level check on 1.21.11 compared two bots with `optimize-waypoint` on/off and `locator_bar` on/off. Waypoint packet counts and tracking/update behavior matched in enabled variants; both disabled variants emitted none. Changed new-config default to enabled for modern branches; existing explicit settings remain untouched. Plugin, proxy, and vanilla GUI behavior remain unverified.
+
+### Waypoint connection iteration — 2026-11-01
+
+- **Status:** implemented in local candidate patches for 1.21.11, 26.1.2 and 26.3; all three applied and built. 1.8.8 has no matching waypoint manager and remains unchanged.
+- **Change:** remove entry snapshots from both `ServerWaypointManager.updatePlayer` and `updateWaypoint`; process the live row with an iterator and remove stale connections through that iterator.
+- **Compatibility:** no public API, configuration, or packet-format change. 100-bot 1.21.11 movement run completed without server errors. No plugin, proxy or real-client test was run.
+- **Measurement:** three paired 100-bot comparisons against the exact v0.0.2 JAR. All candidate MSPT pairs improved by 5.5–7.0%; average of per-run median CPU fell 4.9%, with one pair slightly higher. Process memory was variable and showed no stable reduction. No JFR allocation result was collected for this final patch.
+- **Decision:** candidate merits release for repeated MSPT improvement under this workload; keep claims scoped to tested scenario. Do not claim reduced RAM. Build and CI must pass for all four supported versions before release.
+- **Full figures:** see [`PERFORMANCE.md`](../../PERFORMANCE.md). Raw data remains outside the repository under `Test Server/benchmark-v0.0.3/waypoint-release-qualification/results-both-iterators/`.

@@ -32,12 +32,12 @@ versions:
       jdk: 21
       runtime_java: 21
       patch_roots:
-        - leaf-api/paper-patches
-        - leaf-server/paper-patches
+        - beefmc-api/paper-patches
+        - beefmc-server/paper-patches
       apply_command: "./gradlew applyAllPatches"
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createMojmapPaperclipJar"
-      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+      jar_path: "beefmc-server/build/libs/beefmc-paperclip-*.jar"
     status: runtime-checked
     release:
       tag_pattern: "v{release}"
@@ -53,12 +53,12 @@ versions:
       jdk: 25
       runtime_java: 25
       patch_roots:
-        - leaf-api/paper-patches
-        - leaf-server/paper-patches
+        - beefmc-api/paper-patches
+        - beefmc-server/paper-patches
       apply_command: "./gradlew applyAllPatches"
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createPaperclipJar"
-      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+      jar_path: "beefmc-server/build/libs/beefmc-paperclip-*.jar"
     status: runtime-checked
     release:
       tag_pattern: "v{release}"
@@ -74,12 +74,12 @@ versions:
       jdk: 25
       runtime_java: 25
       patch_roots:
-        - leaf-api/paper-patches
-        - leaf-server/paper-patches
+        - beefmc-api/paper-patches
+        - beefmc-server/paper-patches
       apply_command: "./gradlew applyAllPatches"
       check_command: "./gradlew build"
       jar_command: "./gradlew :beefmc-server:createPaperclipJar"
-      jar_path: "leaf-server/build/libs/beefmc-paperclip-*.jar"
+      jar_path: "beefmc-server/build/libs/beefmc-paperclip-*.jar"
     status: runtime-checked
     release:
       tag_pattern: "v{release}"

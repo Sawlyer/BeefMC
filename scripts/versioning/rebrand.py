@@ -278,16 +278,10 @@ def _replace_gradle_project_names(content: str, family: str) -> tuple[str, bool]
         )
         content = content.replace("Paper forks", "Minecraft server forks")
         content = content.replace('rootProject.name = "leaf"', 'rootProject.name = "beefmc"')
-        content = re.sub(
-            r'for \(name in listOf\("leaf-api", "leaf-server"\)\) \{.*?\n\}',
-            'for ((projectName, directoryName) in listOf("beefmc-api" to "leaf-api", "beefmc-server" to "leaf-server")) {\n'
-            '    include(projectName)\n'
-            '    project(":$projectName").projectDir = file(directoryName)\n'
-            '}',
-            content,
-            flags=re.DOTALL,
+        found = (
+            'rootProject.name = "beefmc"' in content
+            and 'include("beefmc-api", "beefmc-server")' in content
         )
-        found = 'rootProject.name = "beefmc"' in content and '"beefmc-server" to "leaf-server"' in content
     else:
         return content, False
     return content, content != original or found
@@ -314,10 +308,7 @@ def _replace_gradle_build(content: str, family: str) -> tuple[str, bool]:
             'project(":pandaspigot-api")': 'project(":beefmc-api")',
             'project(":pandaspigot-server")': 'project(":beefmc-server")',
         },
-        "modern": {
-            'project(":leaf-api")': 'project(":beefmc-api")',
-            'project(":leaf-server")': 'project(":beefmc-server")',
-        },
+        "modern": {},
     }.get(family, {})
     for before, after in dependencies.items():
         content = content.replace(before, after)

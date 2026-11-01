@@ -123,7 +123,7 @@ abstract class FeaturePatchEditingTask : DefaultTask() {
 }
 
 val appliedRepositories = mapOf(
-    "minecraft" to rootProject.file("leaf-server/src/minecraft/java"),
+    "minecraft" to rootProject.file("beefmc-server/src/minecraft/java"),
     "paper" to rootProject.file("paper-server"),
     "api" to rootProject.file("paper-api"),
 )

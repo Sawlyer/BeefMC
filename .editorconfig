@@ -34,10 +34,10 @@ ij_java_method_parameters_right_paren_on_new_line = true
 ij_java_use_fq_class_names = false
 ij_java_class_names_in_javadoc = 1
 
-[leaf-server/src/minecraft/java/**/*.java]
+[beefmc-server/src/minecraft/java/**/*.java]
 ij_java_use_fq_class_names = true
 
-[leaf-server/src/minecraft/resources/data/**/*.json]
+[beefmc-server/src/minecraft/resources/data/**/*.json]
 indent_size = 2
 
 [paper-{server,api}/src/generated/java/**/*.java]

@@ -5,7 +5,7 @@ usage() {
     cat <<'EOF'
 Usage: bash scripts/checkUpstream.sh [--target REF] [--verbose]
 
-Scan leaf-server/{minecraft,paper}-patches and leaf-api/paper-patches.
+Scan beefmc-server/{minecraft,paper}-patches and beefmc-api/paper-patches.
 Skip headers containing "AUTO SYNC REVISION DISABLED".
 Use --verbose to also show checks, clones, revisions and unchanged/skipped patches.
 
@@ -46,7 +46,7 @@ done
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 temp_base=$(cd -- "${TMPDIR:-/tmp}" && pwd -P)
-temp_dir=$(mktemp -d "$temp_base/leaf-upstream.XXXXXXXX")
+temp_dir=$(mktemp -d "$temp_base/beefmc-upstream.XXXXXXXX")
 output_tmp=''
 discard_output_tmp() {
     if [[ -n "$output_tmp" && "$output_tmp" == "$root"/.upstream-diff.* ]]; then
@@ -56,7 +56,7 @@ discard_output_tmp() {
 }
 cleanup() {
     discard_output_tmp || true
-    if [[ -n "$temp_dir" && "$temp_dir" == "$temp_base"/leaf-upstream.* && -d "$temp_dir" ]]; then
+    if [[ -n "$temp_dir" && "$temp_dir" == "$temp_base"/beefmc-upstream.* && -d "$temp_dir" ]]; then
         verbose_log "CLEANUP $(du -sh -- "$temp_dir")";
         rm -rf -- "$temp_dir"
     fi
@@ -376,7 +376,7 @@ compare_patch() {
 }
 
 patch_dirs=()
-for directory in leaf-server/minecraft-patches leaf-server/paper-patches leaf-api/paper-patches; do
+for directory in beefmc-server/minecraft-patches beefmc-server/paper-patches beefmc-api/paper-patches; do
     [[ -d "$root/$directory" ]] || die "Patch directory not found: $directory"
     patch_dirs+=("$root/$directory")
 done

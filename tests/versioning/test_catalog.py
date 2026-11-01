@@ -101,7 +101,7 @@ class CatalogValidationTests(unittest.TestCase):
         entry = copy.deepcopy(next(item for item in validate_catalog(self.valid) if item["minecraft"] == "1.21.11"))
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             root = Path(temporary)
-            libs = root / "leaf-server" / "build" / "libs"
+            libs = root / "beefmc-server" / "build" / "libs"
             libs.mkdir(parents=True)
             (libs / "paper-server-1.21.11-R0.1-SNAPSHOT.jar").write_bytes(b"intermediate")
             final_jar = libs / "beefmc-paperclip-1.21.11.jar"
@@ -119,16 +119,16 @@ class CatalogValidationTests(unittest.TestCase):
             with self.subTest(version=entry["minecraft"]):
                 build = entry["build"]
                 self.assertIn(":beefmc-server:", build["jar_command"])
-                self.assertEqual("leaf-server/build/libs/beefmc-paperclip-*.jar", build["jar_path"])
+                self.assertEqual("beefmc-server/build/libs/beefmc-paperclip-*.jar", build["jar_path"])
 
     def test_modern_paperclip_task_writes_to_beefmc_filename(self) -> None:
-        patch = ROOT / "leaf-server" / "build.gradle.kts.patch"
+        patch = ROOT / "beefmc-server" / "build.gradle.kts.patch"
         if not patch.exists():
             self.skipTest("this version branch has no modern Paperclip task")
         content = patch.read_text(encoding="utf-8")
         self.assertIn("CreatePaperclipJar>(\"create", content)
         self.assertIn('outputZip.set(layout.buildDirectory.file("libs/$jarName"))', content)
-        suite_patch = ROOT / "leaf-server" / "paper-patches" / "features" / "0008-Leaf-JUnit-test-suite.patch"
+        suite_patch = ROOT / "beefmc-server" / "paper-patches" / "features" / "0008-Leaf-JUnit-test-suite.patch"
         suite_content = suite_patch.read_text(encoding="utf-8")
         self.assertIn('@SuiteDisplayName("Test suite for tests used by BeefMC")', suite_content)
         self.assertNotIn('@SuiteDisplayName("Test suite for tests used by Leaf")', suite_content)
@@ -137,7 +137,7 @@ class CatalogValidationTests(unittest.TestCase):
         entry = copy.deepcopy(next(item for item in validate_catalog(self.valid) if item["minecraft"] == "1.21.11"))
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             root = Path(temporary)
-            libs = root / "leaf-server" / "build" / "libs"
+            libs = root / "beefmc-server" / "build" / "libs"
             libs.mkdir(parents=True)
             (libs / "beefmc-paperclip-a.jar").write_bytes(b"one")
             (libs / "beefmc-paperclip-b.jar").write_bytes(b"two")
@@ -147,7 +147,7 @@ class CatalogValidationTests(unittest.TestCase):
     def test_release_asset_name_and_sha256_are_stable(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             root = Path(temporary)
-            libs = root / "leaf-server" / "build" / "libs"
+            libs = root / "beefmc-server" / "build" / "libs"
             libs.mkdir(parents=True)
             (libs / "beefmc-paperclip-26.3.build.1-alpha.jar").write_bytes(b"release candidate")
             asset, checksum = package_asset("v0.0.0", "26.3", root)

@@ -89,22 +89,21 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("github.event.release.prerelease", content)
 
     def test_rebrand_preserves_compatibility_brand_id(self) -> None:
-        if not (ROOT / "leaf-server/paper-patches/features/0002-Rebrand.patch").is_file():
+        if not (ROOT / "beefmc-server/paper-patches/features/0002-Rebrand.patch").is_file():
             self.skipTest("modern source patches are not part of this version tree")
-        source = (ROOT / "leaf-server/paper-patches/features/0002-Rebrand.patch").read_text(encoding="utf-8")
-        api = (ROOT / "leaf-api/paper-patches/features/0002-Rebrand.patch").read_text(encoding="utf-8")
-        build = (ROOT / "leaf-server/build.gradle.kts.patch").read_text(encoding="utf-8")
+        source = (ROOT / "beefmc-server/paper-patches/features/0002-Rebrand.patch").read_text(encoding="utf-8")
+        api = (ROOT / "beefmc-api/paper-patches/features/0002-Rebrand.patch").read_text(encoding="utf-8")
+        build = (ROOT / "beefmc-server/build.gradle.kts.patch").read_text(encoding="utf-8")
         self.assertIn('BRAND_LEAF_NAME = "Leaf"', source)
         self.assertIn('BRAND_LEAF_ID = Key.key("winds-studio", "leaf")', api)
         self.assertIn('"Brand-Id" to "winds-studio:leaf"', build)
 
     def test_modern_gradle_task_paths_use_beefmc_project_names(self) -> None:
         settings = (ROOT / "settings.gradle.kts").read_text(encoding="utf-8")
-        if '"beefmc-server" to "leaf-server"' not in settings:
+        if 'include("beefmc-api", "beefmc-server")' not in settings:
             self.skipTest("modern project settings are not part of this version tree")
         self.assertIn('rootProject.name = "beefmc"', settings)
-        self.assertIn('"beefmc-api" to "leaf-api"', settings)
-        self.assertIn('"beefmc-server" to "leaf-server"', settings)
+        self.assertIn('include("beefmc-api", "beefmc-server")', settings)
 
 
 if __name__ == "__main__":

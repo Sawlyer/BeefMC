@@ -1,9 +1,9 @@
-# Leaf license
+# BeefMC Licenses
 
-Leaf inherits licenses from upstream projects.
+BeefMC retains licenses and copyright notices from its upstream projects and dependencies. Individual patches may carry additional terms stated in their headers.
 
-Paperweight files are licensed under [MIT](https://opensource.org/licenses/MIT) (included in `license/MIT.txt`).
-Patches are licensed under MIT, unless indicated differently in their header (some patches are licensed under [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html) (included in `license/GPL-3.0.txt`), [LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.html) (included in `license/LGPL-3.0.txt`), or [Apache-2.0](https://www.apache.org/licenses/) (included in `license/Apache-2.0.txt`)).
+Paperweight files are licensed under [MIT](https://opensource.org/licenses/MIT) (included in `licenses/MIT.txt`).
+Patches are licensed under MIT, unless indicated differently in their headers. Some patches are licensed under [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html) (`licenses/GPL-3.0.txt`), [LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.html) (`licenses/LGPL-3.0.txt`), or [Apache-2.0](https://www.apache.org/licenses/) (`licenses/Apache-2.0.txt`).
 Certain patches are derived from other projects and retain the original licenses, as noted in the patch header.
 Binaries are licensed under GPL-3.0-only.
 

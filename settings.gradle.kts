@@ -1,5 +1,3 @@
-import java.util.Locale
-
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -35,7 +33,4 @@ if (!file(".git").exists()) {
 
 rootProject.name = "beefmc"
 
-for ((projectName, directoryName) in listOf("beefmc-api" to "leaf-api", "beefmc-server" to "leaf-server")) {
-    include(projectName)
-    project(":$projectName").projectDir = file(directoryName)
-}
+include("beefmc-api", "beefmc-server")

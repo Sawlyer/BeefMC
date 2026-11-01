@@ -116,10 +116,7 @@ class RebrandTests(unittest.TestCase):
                 '    "https://github.com/PaperMC/Paper/blob/main/CONTRIBUTING.md for Paper forks."\n'
                 '// Leaf end - project setup\n'
                 'rootProject.name = "leaf"\n'
-                'for (name in listOf("leaf-api", "leaf-server")) {\n'
-                '    val projName = name.lowercase(Locale.ENGLISH)\n'
-                '    include(projName)\n'
-                '}\n',
+                'include("beefmc-api", "beefmc-server")\n',
                 encoding="utf-8",
             )
 
@@ -127,7 +124,7 @@ class RebrandTests(unittest.TestCase):
 
             result = settings.read_text(encoding="utf-8")
             self.assertIn('rootProject.name = "beefmc"', result)
-            self.assertIn('"beefmc-server" to "leaf-server"', result)
+            self.assertIn('include("beefmc-api", "beefmc-server")', result)
             self.assertNotIn("Leaf", result)
             self.assertNotIn("leafmc.one", result)
             self.assertNotIn("Paper forks", result)

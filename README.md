@@ -8,11 +8,15 @@ BeefMC currently targets Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3. Its 1.8.8 v
 
 ## Performance and compatibility
 
-Optimizations and measured results are recorded in the [performance record](PERFORMANCE.md). BeefMC makes no memory or performance claim without measurements from a documented workload. Build success alone does not prove runtime stability or plugin compatibility.
+BeefMC v0.0.3 removes per-update waypoint connection snapshots on Minecraft 1.21.11, 26.1.2, and 26.3. In three paired 100-bot tests on 1.21.11, mean MSPT was 6.2% lower than BeefMC v0.0.2, with every pair improving. CPU results were mixed; these runs did not establish a RAM reduction. Minecraft 1.8.8 has no matching code path and is unchanged.
+
+In a separate three-pair test against Paper 1.21.11 build 132 with 50 bots, BeefMC v0.0.3 averaged 11.1% lower per-run median CPU use and 22.8% lower sampled MSPT. Working set was 2.0% higher and private bytes 2.1% higher, so no RAM saving was measured. This synthetic test covers 1.21.11 only. Methods, run details, and limits are in the [performance record](PERFORMANCE.md).
+
+Plugin, proxy, and production-network compatibility have not been validated. Build success alone does not establish runtime stability or compatibility.
 
 ## Releases
 
-GitHub releases use one `vMAJOR.MINOR.PATCH` tag and build a jar plus SHA-256 checksum for each supported version. `v0.0.0` is an initial pre-release; it does not claim production readiness or plugin compatibility.
+Latest release: [BeefMC v0.0.3](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.3). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
 
 ## Contributing and building
 

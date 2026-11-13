@@ -75,3 +75,7 @@ Three source-matched pairs showed no repeatable benefit. Mean MSPT changed by âˆ
 ## Limits
 
 All comparisons above use synthetic local bot workloads without plugins or a proxy. Results do not establish performance for real player activity, production networks, Minecraft versions other than 1.21.11, or other JVM settings. BeefMC v0.0.2 has no separate direct Paper comparison. Measure the exact version, configuration, and workload before deployment decisions.
+
+### Reduced resource profile tested on Minecraft 1.21.11
+
+With 40 dispersed bots, two runs per setting, 20 seconds of warm-up and 35 seconds of measurement, reducing view distance from 6 to 4 and the Java heap cap from 4 GiB to 3 GiB reduced mean server CPU from 3.59 to 2.07 cores, resident memory from 4,745 to 3,685 MiB, and mean tick time from 60.10 to 41.13 ms. Simulation distance was 4 in both cases. All runs used the same local 1.21.11 build and world snapshot, Temurin 21 on Windows 11, and no plugins. The smaller view distance limits how far players can see. These results apply to this workload. Long runs, production capacity and other versions were not measured.

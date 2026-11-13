@@ -1,0 +1,15 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 16:00:00 +0100
+Subject: [PATCH] Default view and simulation distance to four
+
+diff --git a/net/minecraft/server/dedicated/DedicatedServerProperties.java b/net/minecraft/server/dedicated/DedicatedServerProperties.java
+--- a/net/minecraft/server/dedicated/DedicatedServerProperties.java
++++ b/net/minecraft/server/dedicated/DedicatedServerProperties.java
+@@ -105,4 +105,4 @@
+     public final int chatSpamThresholdSeconds = this.get("chat-spam-threshold-seconds", 10);
+-    public final Settings<DedicatedServerProperties>.MutableValue<Integer> viewDistance = this.getMutable("view-distance", 10);
+-    public final Settings<DedicatedServerProperties>.MutableValue<Integer> simulationDistance = this.getMutable("simulation-distance", 10);
++    public final Settings<DedicatedServerProperties>.MutableValue<Integer> viewDistance = this.getMutable("view-distance", 4);
++    public final Settings<DedicatedServerProperties>.MutableValue<Integer> simulationDistance = this.getMutable("simulation-distance", 4);
+     public final Settings<DedicatedServerProperties>.MutableValue<Integer> maxPlayers = this.getMutable("max-players", 20);

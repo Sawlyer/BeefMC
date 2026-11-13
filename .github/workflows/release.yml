@@ -149,4 +149,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" dist/* --clobber
+        run: gh release upload "$RELEASE_TAG" dist/* scripts/launch/start-beefmc.sh scripts/launch/start-beefmc.cmd --clobber

@@ -14,9 +14,15 @@ In a separate three-pair test against Paper 1.21.11 build 132 with 50 bots, Beef
 
 Plugin, proxy, and production-network compatibility have not been validated. Build success alone does not establish runtime stability or compatibility.
 
+## Server defaults
+
+New configurations use a view distance of 4 chunks. Minecraft 1.21.11, 26.1.2 and 26.3 also default to a simulation distance of 4 chunks. Existing values in `server.properties` are preserved. Lower distances can affect visibility and the activity of distant farms.
+
+Run a release JAR with `sh start-beefmc.sh SERVER.jar` or `start-beefmc.cmd SERVER.jar` from the server directory. The [launch scripts](scripts/launch) use an initial Java heap of 512 MiB and a maximum of 3 GiB. Set `BEEFMC_XMS` or `BEEFMC_XMX` to override those values. Use Java 8 for 1.8.8, Java 21 for 1.21.11, and Java 25 for 26.1.2 and 26.3.
+
 ## Releases
 
-Latest release: [BeefMC v0.0.3](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.3). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
+Latest release: [BeefMC v0.0.4](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.4). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
 
 ## Contributing and building
 

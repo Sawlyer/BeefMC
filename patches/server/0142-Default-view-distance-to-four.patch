@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 16:00:00 +0100
+Subject: [PATCH] Default view distance to four
+
+diff --git a/src/main/java/net/minecraft/server/DedicatedPlayerList.java b/src/main/java/net/minecraft/server/DedicatedPlayerList.java
+--- a/src/main/java/net/minecraft/server/DedicatedPlayerList.java
++++ b/src/main/java/net/minecraft/server/DedicatedPlayerList.java
+@@ -13,3 +13,3 @@
+         super(dedicatedserver);
+-        this.a(dedicatedserver.a("view-distance", 10));
++        this.a(dedicatedserver.a("view-distance", 4));
+         this.maxPlayers = dedicatedserver.a("max-players", 20);
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -529,3 +529,3 @@
+     public int getViewDistance() {
+-        return this.getConfigInt("view-distance", 10);
++        return this.getConfigInt("view-distance", 4);
+     }

@@ -20,9 +20,11 @@ New configurations use a view distance of 4 chunks. Minecraft 1.21.11, 26.1.2 an
 
 Run a release JAR with `sh start-beefmc.sh SERVER.jar` or `start-beefmc.cmd SERVER.jar` from the server directory. The [launch scripts](scripts/launch) use an initial Java heap of 512 MiB and a maximum of 3 GiB. Set `BEEFMC_XMS` or `BEEFMC_XMX` to override those values. Use Java 8 for 1.8.8, Java 21 for 1.21.11, and Java 25 for 26.1.2 and 26.3.
 
+On Java 25, set `BEEFMC_PROFILE=compact` to enable compact object headers and a 2944 MiB default heap cap. Use this optional profile on modern versions with a JVM that supports the flag. The measurements cover 1.21.11 on Temurin 25.0.5. The standard profile remains the default.
+
 ## Releases
 
-Latest release: [BeefMC v0.0.4](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.4). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
+Latest release: [BeefMC v0.0.5](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.5). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
 
 ## Contributing and building
 

@@ -79,3 +79,20 @@ All comparisons above use synthetic local bot workloads without plugins or a pro
 ### Reduced resource profile tested on Minecraft 1.21.11
 
 With 40 dispersed bots, two runs per setting, 20 seconds of warm-up and 35 seconds of measurement, reducing view distance from 6 to 4 and the Java heap cap from 4 GiB to 3 GiB reduced mean server CPU from 3.59 to 2.07 cores, resident memory from 4,745 to 3,685 MiB, and mean tick time from 60.10 to 41.13 ms. Simulation distance was 4 in both cases. All runs used the same local 1.21.11 build and world snapshot, Temurin 21 on Windows 11, and no plugins. The smaller view distance limits how far players can see. These results apply to this workload. Long runs, production capacity and other versions were not measured.
+
+### Java 25 compact launch profile
+
+BeefMC 1.21.11 v0.0.4, same JAR and server settings, Temurin 25.0.5, Windows 11, 40 dispersed local bots and no plugins. Two runs per variant in compact/standard/standard/compact order, with 45 seconds of warm-up and 180 seconds measured per run. Initial heap was 512 MiB. The standard profile used 3072 MiB and disabled compact headers. The candidate used 2944 MiB and enabled compact headers.
+
+| Metric | Standard | Compact |
+|---|---:|---:|
+| Mean CPU cores | 1.920 | 1.687 |
+| Mean resident RAM, MiB | 3707.7 | 3569.5 |
+| Mean private bytes, MiB | 3783.8 | 3647.7 |
+| Mean MSPT | 40.18 | 39.16 |
+| P95 of sampled five-second tick maxima, by run | 68.4–69.0 ms | 66.2–71.0 ms |
+| Largest observed tick, by run | 88.2–129.8 ms | 106.0–115.0 ms |
+
+Both candidate runs reduced CPU and RAM versus both controls. One paired maximum regressed, while typical sampled window maxima stayed comparable. These are window maxima rather than individual tick percentiles. At identical 2816 MiB caps in a separate two-pair screen, compact headers alone reduced CPU by 24.5%, resident RAM by 31 MiB and mean MSPT from 47.58 to 45.19. The combined profile trades 128 MiB of heap headroom for lower resident memory. It stays optional. Results do not establish production capacity or performance on 26.x.
+
+Raw confirmation run IDs end in 1794588318567, 1794588564222, 1794588810101 and 1794589056491. Local data: Test Server/compact-headers-ab-20261113/long-confirmation.

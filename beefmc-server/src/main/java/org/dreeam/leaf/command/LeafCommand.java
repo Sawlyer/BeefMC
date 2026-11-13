@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public final class LeafCommand extends Command {
 
-    public static final String COMMAND_LABEL = "leaf";
+    public static final String COMMAND_LABEL = "beefmc";
     public static final String BASE_PERM = LeafCommands.COMMAND_BASE_PERM + "." + COMMAND_LABEL;
     private static final Permission basePermission = new Permission(BASE_PERM, PermissionDefault.OP);
     // subcommand label -> subcommand
@@ -66,7 +66,7 @@ public final class LeafCommand extends Command {
 
     public LeafCommand() {
         super(COMMAND_LABEL);
-        this.description = "Leaf related commands";
+        this.description = "BeefMC related commands";
         this.usageMessage = this.createUsageMessage(SUBCOMMANDS.keySet());
         final List<Permission> permissions = SUBCOMMANDS.values().stream().map(LeafSubcommand::getPermission).filter(Objects::nonNull).toList();
         this.setPermission(BASE_PERM);

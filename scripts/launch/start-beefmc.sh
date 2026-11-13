@@ -6,4 +6,12 @@ if [ "$#" -lt 1 ]; then
 fi
 jar=$1
 shift
-exec "${JAVA:-java}" "-Xms${BEEFMC_XMS:-512M}" "-Xmx${BEEFMC_XMX:-3G}" -jar "$jar" "$@"
+java=${JAVA:-java}
+if [ "${BEEFMC_PROFILE:-}" = compact ]; then
+    if ! "$java" -XX:+UseCompactObjectHeaders -version >/dev/null 2>&1; then
+        echo "The compact profile requires a Java runtime with UseCompactObjectHeaders support. Use Java 25." >&2
+        exit 2
+    fi
+    exec "$java" "-Xms${BEEFMC_XMS:-512M}" "-Xmx${BEEFMC_XMX:-2944M}" -XX:+UseCompactObjectHeaders -jar "$jar" "$@"
+fi
+exec "$java" "-Xms${BEEFMC_XMS:-512M}" "-Xmx${BEEFMC_XMX:-3G}" -jar "$jar" "$@"

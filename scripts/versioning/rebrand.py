@@ -144,6 +144,11 @@ def _replace_beefmc_version_command(content: str) -> tuple[str, bool]:
     class_anchor = "public class VersionCommand extends BukkitCommand {"
     import_anchor = "import org.bukkit.plugin.Plugin;"
     helper_anchor = "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {"
+    brigadier = "public class PaperVersionCommand {" in content
+    if brigadier:
+        class_anchor = "public class PaperVersionCommand {"
+        execute_anchor = "        sendVersion(context.getSource().getSender());"
+        helper_anchor = "    private int serverVersion("
     if any(anchor not in content for anchor in (execute_anchor, class_anchor, import_anchor, helper_anchor)):
         return content, False
 
@@ -307,6 +312,10 @@ import java.util.regex.Pattern;"""
         }
     }
 '''
+    if brigadier:
+        call = "        checkBeefMCReleaseAsync(context.getSource().getSender());\n"
+        helpers = helpers.replace("@NotNull CommandSender", "CommandSender").replace("VersionCommand.class", "PaperVersionCommand.class")
+    imports = "".join("\n" + line for line in imports.splitlines() if line and line not in content)
     content = content.replace(import_anchor, import_anchor + imports)
     content = content.replace(class_anchor, class_anchor + fields)
     content = content.replace(execute_anchor, call + execute_anchor)
@@ -685,6 +694,7 @@ def _source_files(source_root: Path) -> list[Path]:
         "LeafCommand.java",
         "LeafCommands.java",
         "VersionCommand.java",
+        "PaperVersionCommand.java",
         "ReloadCommand.java",
         "AsyncPathProcessor.java",
         "AsyncPlayerDataSaving.java",
@@ -764,7 +774,7 @@ def apply_rebrand(source_root: Path, version: str, family: str) -> list[Change]:
     brand_markers = 0
     for path in _source_files(source_root):
         original = path.read_text(encoding="utf-8")
-        if path.name == "VersionCommand.java":
+        if path.name in {"VersionCommand.java", "PaperVersionCommand.java"}:
             transform = _replace_beefmc_version_command if family == "modern" else legacy_transforms.get(path.name)
         else:
             transform = leaf_transforms.get(path.name) if family == "modern" else None

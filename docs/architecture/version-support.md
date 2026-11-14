@@ -48,6 +48,12 @@ Create a GitHub release with a `vMAJOR.MINOR.PATCH` tag on `main`. Publishing th
 
 `v0.0.0` is an initial pre-release. It may include versions at `branch-ready` or `build-checked` status, and must remain marked as a pre-release. Later releases require every catalog version to be `runtime-checked` or `released`. Release automation does not claim plugin compatibility or performance gains beyond recorded checks and measurements.
 
+The release workflow also attaches `BeefMC-Launcher.jar` and its SHA-256 sidecar. Existing servers must start through this launcher to install updates automatically; direct `java -jar server.jar` startup cannot replace its own running JAR.
+
+## Automatic updates
+
+See [Automatic updates](../operations/automatic-updates.md) for the one-time launcher setup, default-on behavior, per-server opt-out, backup, and rollback details.
+
 ## HAProxy and performance
 
 BeefMC-owned HAProxy PROXY protocol support applies only to 1.8.8. Preserve inherited behavior on modern versions and distinguish it from BeefMC changes.

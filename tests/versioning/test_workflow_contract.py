@@ -143,6 +143,18 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("actions/upload-artifact@v7", content)
         self.assertIn("gh release upload", content)
         self.assertIn("github.event.release.prerelease", content)
+        self.assertIn("tools/updater", content)
+        self.assertIn("package-launcher", content)
+        self.assertIn("BeefMC-Launcher.jar.sha256", content)
+
+    def test_published_startup_scripts_route_through_launcher(self) -> None:
+        shell = (ROOT / "scripts/launch/start-beefmc.sh").read_text(encoding="utf-8")
+        windows = (ROOT / "scripts/launch/start-beefmc.cmd").read_text(encoding="utf-8")
+        for script in (shell, windows):
+            self.assertIn("BeefMC-Launcher.jar", script)
+            self.assertIn("BEEFMC_MINECRAFT_VERSION", script)
+            self.assertIn("--server-jar", script)
+            self.assertIn("-- ", script)
 
     def test_rebrand_preserves_compatibility_brand_id(self) -> None:
         if not (ROOT / "beefmc-server/paper-patches/features/0002-Rebrand.patch").is_file():

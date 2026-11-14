@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "versioning"))
 
 from catalog import CatalogError, entry_for_branch, load_catalog, load_upstream_manifest, matrix_for_selector, release_version_for_tag, validate_catalog
-from release import package_asset, select_jar, validate_release
+from release import package_asset, package_launcher_asset, select_jar, validate_release
 
 
 class CatalogValidationTests(unittest.TestCase):
@@ -159,6 +159,17 @@ class CatalogValidationTests(unittest.TestCase):
             asset, checksum = package_asset("v0.0.0", "26.3", root)
             self.assertEqual("BeefMC-26.3-v0.0.0.jar", asset.name)
             self.assertEqual("BeefMC-26.3-v0.0.0.jar.sha256", checksum.name)
+            self.assertIn(asset.name, checksum.read_text(encoding="ascii"))
+
+    def test_launcher_release_asset_has_matching_sha256_sidecar(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            root = Path(temporary)
+            launcher = root / "tools" / "updater" / "build" / "libs" / "BeefMC-Launcher.jar"
+            launcher.parent.mkdir(parents=True)
+            launcher.write_bytes(b"standalone launcher")
+            asset, checksum = package_launcher_asset(root)
+            self.assertEqual("BeefMC-Launcher.jar", asset.name)
+            self.assertEqual("BeefMC-Launcher.jar.sha256", checksum.name)
             self.assertIn(asset.name, checksum.read_text(encoding="ascii"))
 
 

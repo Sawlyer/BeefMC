@@ -26,6 +26,8 @@ run
 beefmc-api/build.gradle.kts
 beefmc-server/build.gradle.kts
 beefmc-server/src/minecraft
+tools/updater/.gradle/
+tools/updater/build/
 paper-api
 paper-server
 

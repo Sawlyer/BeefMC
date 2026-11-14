@@ -83,6 +83,20 @@ def package_asset(
     return asset, checksum
 
 
+def package_launcher_asset(source_root: Path = ROOT) -> tuple[Path, Path]:
+    launcher = source_root / "tools" / "updater" / "build" / "libs" / "BeefMC-Launcher.jar"
+    if not launcher.is_file():
+        raise CatalogError(f"standalone launcher JAR is missing at {launcher}")
+    asset_dir = source_root / "dist"
+    asset_dir.mkdir(exist_ok=True)
+    asset = asset_dir / "BeefMC-Launcher.jar"
+    shutil.copy2(launcher, asset)
+    digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+    checksum = asset.with_suffix(asset.suffix + ".sha256")
+    checksum.write_text(f"{digest}  {asset.name}\n", encoding="ascii")
+    return asset, checksum
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate a multi-version BeefMC release and package one version jar")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -97,6 +111,8 @@ def main() -> int:
     package.add_argument("minecraft")
     package.add_argument("--source-root", type=Path, default=ROOT)
     package.add_argument("--catalog", type=Path, default=CATALOG_PATH)
+    launcher = subparsers.add_parser("package-launcher")
+    launcher.add_argument("--source-root", type=Path, default=ROOT)
     args = parser.parse_args()
     try:
         if args.command == "validate":
@@ -105,8 +121,12 @@ def main() -> int:
             )
             print(f"release_version={release_version}")
             print(f"matrix_count={len(entries)}")
-        else:
+        elif args.command == "package":
             asset, checksum = package_asset(args.tag, args.minecraft, args.source_root, args.catalog)
+            print(f"asset={asset.relative_to(args.source_root).as_posix()}")
+            print(f"checksum={checksum.relative_to(args.source_root).as_posix()}")
+        else:
+            asset, checksum = package_launcher_asset(args.source_root)
             print(f"asset={asset.relative_to(args.source_root).as_posix()}")
             print(f"checksum={checksum.relative_to(args.source_root).as_posix()}")
         return 0

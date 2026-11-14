@@ -139,6 +139,19 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build standalone launcher
+        run: ./gradlew -p tools/updater clean test jar --no-daemon
+      - name: Package launcher and checksum
+        run: |
+          python scripts/versioning/release.py package-launcher
+          test -s dist/BeefMC-Launcher.jar.sha256
       - name: Download release assets
         uses: actions/download-artifact@v7
         with:

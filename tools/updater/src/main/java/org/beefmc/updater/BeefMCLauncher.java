@@ -55,8 +55,8 @@ public final class BeefMCLauncher {
                     UpdateInstaller.UpdateResult result = installer.install(serverJar, release, true);
                     if (result.getOutcome() == UpdateInstaller.Outcome.INSTALLED
                         || result.getOutcome() == UpdateInstaller.Outcome.ALREADY_CURRENT) {
-                        installedTag = release.getTag();
-                        System.out.println("BeefMC release " + release.getTag() + " ready for Minecraft " + options.minecraftVersion);
+                        installedTag = result.getReleaseTag();
+                        System.out.println("BeefMC release " + installedTag + " ready for Minecraft " + options.minecraftVersion);
                     }
                 }
             }

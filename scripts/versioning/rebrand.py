@@ -221,7 +221,7 @@ import java.util.regex.Pattern;"""
                             String checksum = asset.substring(0, asset.length() - 2) + "\\.sha256\\\"";
                             if (Pattern.compile(asset).matcher(json).find() && Pattern.compile(checksum).matcher(json).find()) {
                                 result = current.isEmpty() ? "latest:" + latest
-                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + latest;
+                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + current;
                             }
                         }
                     }
@@ -253,7 +253,7 @@ import java.util.regex.Pattern;"""
         if (status.startsWith("available:")) {
             sender.sendMessage(Component.text("BeefMC update " + status.substring("available:".length())
                 + " is available for Minecraft " + System.getProperty("beefmc.minecraft.version", "unknown")
-                + ". It will install at the next launcher start.", NamedTextColor.GREEN));
+                + "." + beefmcUpdateInstallationMessage(), NamedTextColor.GREEN));
         } else if (status.startsWith("current:")) {
             sender.sendMessage(Component.text("BeefMC is up to date (" + status.substring("current:".length()) + ").", NamedTextColor.GRAY));
         } else if (status.startsWith("latest:")) {
@@ -269,6 +269,15 @@ import java.util.regex.Pattern;"""
         } else {
             sender.sendMessage(Component.text("BeefMC release check unavailable. The launcher will retry at next startup.", NamedTextColor.GRAY));
         }
+    }
+
+    private static String beefmcUpdateInstallationMessage() {
+        if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+            return " Use BeefMC-Launcher.jar to install updates automatically.";
+        }
+        return Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))
+            ? " It will install at the next launcher start."
+            : " Automatic updates are disabled for this server.";
     }
 
     private static int compareBeefMCReleaseTags(String first, String second) {
@@ -390,7 +399,7 @@ import java.util.regex.Pattern;"""
                             String checksum = asset.substring(0, asset.length() - 2) + "\\.sha256\\\"";
                             if (Pattern.compile(asset).matcher(json).find() && Pattern.compile(checksum).matcher(json).find()) {
                                 result = current.isEmpty() ? "latest:" + latest
-                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + latest;
+                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + current;
                             }
                         }
                     }
@@ -422,7 +431,7 @@ import java.util.regex.Pattern;"""
         if (status.startsWith("available:")) {
             sender.sendMessage("BeefMC update " + status.substring("available:".length())
                 + " is available for Minecraft " + System.getProperty("beefmc.minecraft.version", "unknown")
-                + ". It will install at the next launcher start.");
+                + "." + beefmcUpdateInstallationMessage());
         } else if (status.startsWith("current:")) {
             sender.sendMessage("BeefMC is up to date (" + status.substring("current:".length()) + ").");
         } else if (status.startsWith("latest:")) {
@@ -438,6 +447,15 @@ import java.util.regex.Pattern;"""
         } else {
             sender.sendMessage("BeefMC release check unavailable. The launcher will retry at next startup.");
         }
+    }
+
+    private static String beefmcUpdateInstallationMessage() {
+        if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+            return " Use BeefMC-Launcher.jar to install updates automatically.";
+        }
+        return Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))
+            ? " It will install at the next launcher start."
+            : " Automatic updates are disabled for this server.";
     }
 
     private static int compareBeefMCReleaseTags(String first, String second) {

@@ -2,6 +2,17 @@
 
 This record summarizes measured results by release. Results apply only to the listed Minecraft version and workload. No result here establishes a general CPU or memory gain across servers.
 
+## Unreleased — compact chunk section storage
+
+Random-tick position indexes now allocate their reverse lookup on first use. Uniform block-state and biome palettes reuse immutable zero-bit storage for their standard sizes. The random-tick order, palette format, anti-xray presets, and server configuration are unchanged.
+
+BeefMC 1.21.11 local builds were compared on Windows 11 with Temurin 21.0.11, 40 dispersed bots, the same world snapshot and seed, and identical JVM flags within each comparison. Normalized disassembly found instruction differences only in the two changed classes.
+
+- At a common 2816 MiB heap cap, five paired 80-second runs after a 35-second warm-up averaged 2.881 versus 1.941 CPU cores and 46.79 versus 44.13 MSPT. CPU fell in all five pairs. Mean resident memory moved from 3434 to 3429 MiB, with mixed paired results.
+- Two additional pairs with GC logging and the same cap measured median post-pause heap occupancy of 2598 and 2605 MiB for the baseline and 2321 and 2316 MiB for the candidate. Baseline and candidate CPU averaged 2.885 and 1.949 cores. Post-pause occupancy includes objects that later GC cycles can reclaim.
+- At a 3 GiB cap, the 100-second comparisons measured 18.9% lower CPU and 14 MiB higher average resident memory. The benchmark establishes a heap-occupancy reduction at 2816 MiB. Resident process memory varied across runs.
+
+
 ## BeefMC v0.0.3
 
 **Change:** modern waypoint updates now iterate live connection maps instead of allocating copied sets in `ServerWaypointManager.updatePlayer` and `updateWaypoint`. Applied to 1.21.11, 26.1.2, and 26.3. Minecraft 1.8.8 has no matching code path and is unchanged. No configuration, API, or packet format changed.

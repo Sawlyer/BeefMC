@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BeefMC Contributors <contact@beefmc.org>
+Date: Sat, 14 Nov 2026 13:21:19 GMT
+Subject: [PATCH] Allocate random tick indexes on demand
+
+
+diff --git a/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java b/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
+index 14e6daea6..b2af7d22b 100644
+--- a/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
++++ b/src/main/java/ca/spottedleaf/moonrise/common/list/ShortList.java
+@@ -5,9 +5,14 @@ import java.util.Arrays;
+ 
+ public final class ShortList {
+ 
+-    private final Short2ShortOpenHashMap map = new Short2ShortOpenHashMap();
+-    {
+-        this.map.defaultReturnValue(Short.MIN_VALUE);
++    private Short2ShortOpenHashMap map;
++
++    private Short2ShortOpenHashMap getOrCreateMap() {
++        if (this.map == null) {
++            this.map = new Short2ShortOpenHashMap();
++            this.map.defaultReturnValue(Short.MIN_VALUE);
++        }
++        return this.map;
+     }
+ 
+     private short[] byIndex = me.titaniumtown.ArrayConstants.emptyShortArray; // Gale - JettPack - reduce array allocations
+@@ -29,12 +34,12 @@ public final class ShortList {
+         if (byIndex.length < len) {
+             this.byIndex = Arrays.copyOf(byIndex, len);
+         }
+-        this.map.ensureCapacity(len);
++        this.getOrCreateMap().ensureCapacity(len);
+     }
+ 
+     public boolean add(final short value) {
+         final int count = (int)this.count;
+-        final short currIndex = this.map.putIfAbsent(value, (short)count);
++        final short currIndex = this.getOrCreateMap().putIfAbsent(value, (short)count);
+ 
+         if (currIndex != Short.MIN_VALUE) {
+             return false; // already in this list
+@@ -54,6 +59,7 @@ public final class ShortList {
+     }
+ 
+     public boolean remove(final short value) {
++        if (this.map == null) return false;
+         final short index = this.map.remove(value);
+         if (index == Short.MIN_VALUE) {
+             return false;
+@@ -74,6 +80,6 @@ public final class ShortList {
+ 
+     public void clear() {
+         this.count = (short)0;
+-        this.map.clear();
++        if (this.map != null) this.map.clear();
+     }
+ }

@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BeefMC Contributors <contact@beefmc.org>
+Date: Sat, 14 Nov 2026 13:21:19 GMT
+Subject: [PATCH] Share zero-bit palette storage
+
+
+diff --git a/net/minecraft/world/level/chunk/PalettedContainer.java b/net/minecraft/world/level/chunk/PalettedContainer.java
+index c9f8259..efb26cc 100644
+--- a/net/minecraft/world/level/chunk/PalettedContainer.java
++++ b/net/minecraft/world/level/chunk/PalettedContainer.java
+@@ -24,6 +24,16 @@ import org.jspecify.annotations.Nullable;
+ 
+ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainerRO<T> {
+     private static final int MIN_PALETTE_BITS = 0;
++    private static final ZeroBitStorage EMPTY_SECTION_STORAGE = new ZeroBitStorage(4096);
++    private static final ZeroBitStorage EMPTY_BIOME_STORAGE = new ZeroBitStorage(64);
++
++    private static ZeroBitStorage zeroStorage(int size) {
++        return switch (size) {
++            case 4096 -> EMPTY_SECTION_STORAGE;
++            case 64 -> EMPTY_BIOME_STORAGE;
++            default -> new ZeroBitStorage(size);
++        };
++    }
+     public volatile PalettedContainer.Data<T> data; // Paper - optimise collisions - public
+     private final Strategy<T> strategy;
+     private final T @Nullable [] presetValues; // Paper - Anti-Xray - Add preset values
+@@ -175,7 +185,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+         }
+ 
+         BitStorage storage = dataConfiguration.bitsInMemory() == 0
+-            ? new ZeroBitStorage(this.strategy.entryCount())
++            ? zeroStorage(this.strategy.entryCount())
+             : new SimpleBitStorage(dataConfiguration.bitsInMemory(), this.strategy.entryCount());
+         Palette<T> palette = dataConfiguration.createPalette(this.strategy, List.of());
+         return new PalettedContainer.Data<>(dataConfiguration, storage, palette);
+@@ -327,7 +337,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+         Palette<T> palette;
+         if (storedConfiguration.bitsInMemory() == 0) {
+             palette = storedConfiguration.createPalette(strategy, paletteEntries);
+-            storage = new ZeroBitStorage(entryCount);
++            storage = zeroStorage(entryCount);
+         } else {
+             Optional<LongStream> dataOpt = discData.storage();
+             if (dataOpt.isEmpty()) {

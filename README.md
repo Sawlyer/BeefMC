@@ -24,7 +24,9 @@ On Java 25, set `BEEFMC_PROFILE=compact` to enable compact object headers and a 
 
 ## Releases
 
-Latest release: [BeefMC v0.0.5](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.5). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
+Latest release: [BeefMC v0.0.6](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.6). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
+
+v0.0.6 reduces chunk section storage overhead on 1.21.11, 26.1.2, and 26.3. In a 1.21.11 test with 40 bots and the same 2816 MiB heap cap, CPU usage fell by about 33% and post-GC heap occupancy by about 283 MiB. Resident memory varied. See [the benchmark details](PERFORMANCE.md#beefmc-v006).
 
 ## Contributing and building
 

@@ -8,10 +8,90 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "versioning"))
 
-from rebrand import apply_rebrand
+from rebrand import _replace_beefmc_legacy_version_command, _replace_beefmc_version_command, apply_rebrand
 
 
 class RebrandTests(unittest.TestCase):
+    def test_adds_async_release_status_to_legacy_version_command_once(self) -> None:
+        source = (
+            "import org.bukkit.plugin.Plugin;\n"
+            "public class VersionCommand extends BukkitCommand {\n"
+            "    public boolean execute(CommandSender sender, String alias, String[] args) {\n"
+            "        if (args.length == 0) {\n"
+            "            sendVersion(sender);\n"
+            "        }\n"
+            "        return true;\n"
+            "    }\n"
+            "    private void obtainVersion() {}\n"
+            "    private void sendVersion(CommandSender sender) {}\n"
+            "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {}\n"
+            "}\n"
+        )
+
+        transformed, changed = _replace_beefmc_legacy_version_command(source)
+        repeated, found = _replace_beefmc_legacy_version_command(transformed)
+
+        self.assertTrue(changed)
+        self.assertTrue(found)
+        self.assertEqual(transformed, repeated)
+        self.assertIn("Thread checker = new Thread", transformed)
+        self.assertIn("checkBeefMCReleaseAsync(sender)", transformed)
+        self.assertIn("BeefMC-Launcher.jar", transformed)
+        self.assertIn("compareBeefMCReleaseTags", transformed)
+
+    def test_modern_rebrand_processes_version_command(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            source = Path(temporary)
+            command = source / "paper-api/src/main/java/org/bukkit/command/defaults/VersionCommand.java"
+            command.parent.mkdir(parents=True)
+            command.write_text(
+                "import org.bukkit.plugin.Plugin;\n"
+                "public class VersionCommand extends BukkitCommand {\n"
+                "    public boolean execute(CommandSender sender, String alias, String[] args) {\n"
+                "        if (args.length == 0) {\n"
+                "            sendVersion(sender);\n"
+                "        }\n"
+                "        return true;\n"
+                "    }\n"
+                "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {}\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            changes = apply_rebrand(source, "26.3", "modern")
+
+            self.assertEqual(1, len(changes))
+            transformed = command.read_text(encoding="utf-8")
+            self.assertIn("checkBeefMCReleaseAsync(sender)", transformed)
+            self.assertIn("BEEFMC_RELEASE_WAITERS", transformed)
+        self.assertIn("BEEFMC_RELEASE_CACHE_MILLIS = 600000L", transformed)
+
+    def test_adds_async_beefmc_release_status_to_modern_version_command_once(self) -> None:
+        source = (
+            "import org.bukkit.plugin.Plugin;\n"
+            "public class VersionCommand extends BukkitCommand {\n"
+            "    public boolean execute(CommandSender sender, String alias, String[] args) {\n"
+            "        if (args.length == 0) {\n"
+            "            sendVersion(sender);\n"
+            "        }\n"
+            "        return true;\n"
+            "    }\n"
+            "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {}\n"
+            "}\n"
+        )
+
+        transformed, changed = _replace_beefmc_version_command(source)
+        repeated, found = _replace_beefmc_version_command(transformed)
+
+        self.assertTrue(changed)
+        self.assertTrue(found)
+        self.assertEqual(transformed, repeated)
+        self.assertIn("checkBeefMCReleaseAsync(sender)", transformed)
+        self.assertIn("new Thread", transformed)
+        self.assertIn("BEEFMC_RELEASE_CACHE_MILLIS = 600000L", transformed)
+        self.assertIn("BeefMC-" , transformed)
+        self.assertIn("compareBeefMCReleaseTags", transformed)
+
     def test_rebrands_runtime_and_manifest_but_keeps_paper_compatibility_id(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             source = Path(temporary)

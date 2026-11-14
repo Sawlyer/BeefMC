@@ -136,6 +136,370 @@ def _replace_leaf_command(content: str) -> tuple[str, bool]:
     return content, content != original or 'COMMAND_LABEL = "beefmc"' in content
 
 
+def _replace_beefmc_version_command(content: str) -> tuple[str, bool]:
+    marker = "BEEFMC_RELEASE_STATUS"
+    if marker in content:
+        return content, True
+    execute_anchor = "            sendVersion(sender);"
+    class_anchor = "public class VersionCommand extends BukkitCommand {"
+    import_anchor = "import org.bukkit.plugin.Plugin;"
+    helper_anchor = "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {"
+    brigadier = "public class PaperVersionCommand {" in content
+    if brigadier:
+        class_anchor = "public class PaperVersionCommand {"
+        execute_anchor = "        sendVersion(context.getSource().getSender());"
+        helper_anchor = "    private int serverVersion("
+    if any(anchor not in content for anchor in (execute_anchor, class_anchor, import_anchor, helper_anchor)):
+        return content, False
+
+    imports = """\nimport net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import java.io.ByteArrayOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;"""
+    fields = r'''
+    private static final Pattern RELEASE_TAG = Pattern.compile("\\\"tag_name\\\"\\s*:\\s*\\\"(v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*))\\\"");
+    private static volatile String BEEFMC_RELEASE_STATUS = "checking";
+    private static boolean beefmcReleaseCheckStarted;
+    private static long beefmcReleaseCheckedAt;
+    private static final long BEEFMC_RELEASE_CACHE_MILLIS = 600000L;
+    private static final List<CommandSender> BEEFMC_RELEASE_WAITERS = new ArrayList<CommandSender>();
+'''
+    call = "            checkBeefMCReleaseAsync(sender);\n"
+    helpers = r'''
+    private static void checkBeefMCReleaseAsync(@NotNull CommandSender sender) {
+        boolean startCheck = false;
+        String status;
+        synchronized (VersionCommand.class) {
+            status = BEEFMC_RELEASE_STATUS;
+            if (!"checking".equals(status) && System.currentTimeMillis() - beefmcReleaseCheckedAt > BEEFMC_RELEASE_CACHE_MILLIS) {
+                status = "checking";
+                BEEFMC_RELEASE_STATUS = status;
+            }
+            if ("checking".equals(status)) {
+                BEEFMC_RELEASE_WAITERS.add(sender);
+                if (!beefmcReleaseCheckStarted) {
+                    beefmcReleaseCheckStarted = true;
+                    startCheck = true;
+                }
+            }
+        }
+        if (!"checking".equals(status)) {
+            sendBeefMCReleaseStatus(sender, status);
+            return;
+        }
+        sender.sendMessage(Component.text("Checking for BeefMC releases in the background.", NamedTextColor.GRAY));
+        if (!startCheck) {
+            return;
+        }
+        Thread checker = new Thread(() -> {
+            String result = "unavailable";
+            String minecraft = System.getProperty("beefmc.minecraft.version", "");
+            String current = System.getProperty("beefmc.release.tag", "");
+            if (!minecraft.isEmpty()) {
+                HttpURLConnection connection = null;
+                try {
+                    connection = (HttpURLConnection) URI.create("https://api.github.com/repos/Sawlyer/BeefMC/releases/latest").toURL().openConnection();
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+                    connection.setRequestProperty("Accept", "application/vnd.github+json");
+                    connection.setRequestProperty("User-Agent", "BeefMC-Version-Check/1.0");
+                    if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        ByteArrayOutputStream response = new ByteArrayOutputStream();
+                        byte[] buffer = new byte[4096];
+                        try (java.io.InputStream input = connection.getInputStream()) {
+                            int length;
+                            while ((length = input.read(buffer)) != -1 && response.size() + length <= 131072) {
+                                response.write(buffer, 0, length);
+                            }
+                        }
+                        String json = new String(response.toByteArray(), StandardCharsets.UTF_8);
+                        Matcher matcher = RELEASE_TAG.matcher(json);
+                        if (matcher.find()) {
+                            String latest = matcher.group(1);
+                            String asset = "\\\"name\\\"\\s*:\\s*\\\"BeefMC-" + Pattern.quote(minecraft) + "-" + Pattern.quote(latest) + "\\.jar\\\"";
+                            String checksum = asset.substring(0, asset.length() - 2) + "\\.sha256\\\"";
+                            if (Pattern.compile(asset).matcher(json).find() && Pattern.compile(checksum).matcher(json).find()) {
+                                result = current.isEmpty() ? "latest:" + latest
+                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + current;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    result = "unavailable";
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
+                }
+            }
+            List<CommandSender> waiters;
+            synchronized (VersionCommand.class) {
+                BEEFMC_RELEASE_STATUS = result;
+                beefmcReleaseCheckedAt = System.currentTimeMillis();
+                beefmcReleaseCheckStarted = false;
+                waiters = new ArrayList<CommandSender>(BEEFMC_RELEASE_WAITERS);
+                BEEFMC_RELEASE_WAITERS.clear();
+            }
+            for (CommandSender waiter : waiters) {
+                sendBeefMCReleaseStatus(waiter, result);
+            }
+        }, "BeefMC-release-check");
+        checker.setDaemon(true);
+        checker.start();
+    }
+
+    private static void sendBeefMCReleaseStatus(@NotNull CommandSender sender, String status) {
+        if (status.startsWith("available:")) {
+            sender.sendMessage(Component.text("BeefMC update " + status.substring("available:".length())
+                + " is available for Minecraft " + System.getProperty("beefmc.minecraft.version", "unknown")
+                + "." + beefmcUpdateInstallationMessage(), NamedTextColor.GREEN));
+        } else if (status.startsWith("current:")) {
+            sender.sendMessage(Component.text("BeefMC is up to date (" + status.substring("current:".length()) + ").", NamedTextColor.GRAY));
+        } else if (status.startsWith("latest:")) {
+            String message = "Latest stable BeefMC release is " + status.substring("latest:".length()) + ". Current JAR version is unknown";
+            if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+                message += "; use BeefMC-Launcher.jar to compare and install it at startup.";
+            } else if (!Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))) {
+                message += "; automatic updates are disabled for this server.";
+            } else {
+                message += "; launcher will compare and install it at next startup.";
+            }
+            sender.sendMessage(Component.text(message, NamedTextColor.YELLOW));
+        } else {
+            sender.sendMessage(Component.text("BeefMC release check unavailable. The launcher will retry at next startup.", NamedTextColor.GRAY));
+        }
+    }
+
+    private static String beefmcUpdateInstallationMessage() {
+        if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+            return " Use BeefMC-Launcher.jar to install updates automatically.";
+        }
+        return Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))
+            ? " It will install at the next launcher start."
+            : " Automatic updates are disabled for this server.";
+    }
+
+    private static int compareBeefMCReleaseTags(String first, String second) {
+        int[] left = parseBeefMCReleaseTag(first);
+        int[] right = parseBeefMCReleaseTag(second);
+        if (left == null || right == null) {
+            return left == null ? (right == null ? 0 : -1) : 1;
+        }
+        for (int index = 0; index < left.length; index++) {
+            int compare = Integer.compare(left[index], right[index]);
+            if (compare != 0) {
+                return compare;
+            }
+        }
+        return 0;
+    }
+
+    private static int[] parseBeefMCReleaseTag(String tag) {
+        if (tag == null || !tag.matches("v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)")) {
+            return null;
+        }
+        try {
+            String[] parts = tag.substring(1).split("\\.");
+            return new int[] { Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]) };
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+'''
+    if brigadier:
+        call = "        checkBeefMCReleaseAsync(context.getSource().getSender());\n"
+        helpers = helpers.replace("@NotNull CommandSender", "CommandSender").replace("VersionCommand.class", "PaperVersionCommand.class")
+    imports = "".join("\n" + line for line in imports.splitlines() if line and line not in content)
+    content = content.replace(import_anchor, import_anchor + imports)
+    content = content.replace(class_anchor, class_anchor + fields)
+    content = content.replace(execute_anchor, call + execute_anchor)
+    content = content.replace(helper_anchor, helpers + '\n' + helper_anchor)
+    return content, marker in content
+
+def _replace_beefmc_legacy_version_command(content: str) -> tuple[str, bool]:
+    marker = "BEEFMC_RELEASE_STATUS"
+    if marker in content:
+        return content, True
+    execute_anchor = "            sendVersion(sender);"
+    class_anchor = "public class VersionCommand extends BukkitCommand {"
+    import_anchor = "import org.bukkit.plugin.Plugin;"
+    helper_anchor = "    private void describeToSender(Plugin plugin, CommandSender sender) {"
+    if execute_anchor not in content or class_anchor not in content or import_anchor not in content:
+        return content, False
+    if helper_anchor not in content:
+        helper_anchor = "    private void describeToSender(@NotNull Plugin plugin, @NotNull CommandSender sender) {"
+    if helper_anchor not in content:
+        return content, False
+
+    imports = """\nimport java.io.ByteArrayOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;"""
+    fields = r'''
+    private static final Pattern RELEASE_TAG = Pattern.compile("\\\"tag_name\\\"\\s*:\\s*\\\"(v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*))\\\"");
+    private static volatile String BEEFMC_RELEASE_STATUS = "checking";
+    private static boolean beefmcReleaseCheckStarted;
+    private static long beefmcReleaseCheckedAt;
+    private static final long BEEFMC_RELEASE_CACHE_MILLIS = 600000L;
+    private static final List<CommandSender> BEEFMC_RELEASE_WAITERS = new ArrayList<CommandSender>();
+'''
+    helpers = r'''
+    private static void checkBeefMCReleaseAsync(CommandSender sender) {
+        boolean startCheck = false;
+        String status;
+        synchronized (VersionCommand.class) {
+            status = BEEFMC_RELEASE_STATUS;
+            if (!"checking".equals(status) && System.currentTimeMillis() - beefmcReleaseCheckedAt > BEEFMC_RELEASE_CACHE_MILLIS) {
+                status = "checking";
+                BEEFMC_RELEASE_STATUS = status;
+            }
+            if ("checking".equals(status)) {
+                BEEFMC_RELEASE_WAITERS.add(sender);
+                if (!beefmcReleaseCheckStarted) {
+                    beefmcReleaseCheckStarted = true;
+                    startCheck = true;
+                }
+            }
+        }
+        if (!"checking".equals(status)) {
+            sendBeefMCReleaseStatus(sender, status);
+            return;
+        }
+        sender.sendMessage("Checking for BeefMC releases in the background.");
+        if (!startCheck) {
+            return;
+        }
+        Thread checker = new Thread(() -> {
+            String result = "unavailable";
+            String minecraft = System.getProperty("beefmc.minecraft.version", "");
+            String current = System.getProperty("beefmc.release.tag", "");
+            if (!minecraft.isEmpty()) {
+                HttpURLConnection connection = null;
+                try {
+                    connection = (HttpURLConnection) URI.create("https://api.github.com/repos/Sawlyer/BeefMC/releases/latest").toURL().openConnection();
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+                    connection.setRequestProperty("Accept", "application/vnd.github+json");
+                    connection.setRequestProperty("User-Agent", "BeefMC-Version-Check/1.0");
+                    if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        ByteArrayOutputStream response = new ByteArrayOutputStream();
+                        byte[] buffer = new byte[4096];
+                        try (java.io.InputStream input = connection.getInputStream()) {
+                            int length;
+                            while ((length = input.read(buffer)) != -1 && response.size() + length <= 131072) {
+                                response.write(buffer, 0, length);
+                            }
+                        }
+                        String json = new String(response.toByteArray(), StandardCharsets.UTF_8);
+                        Matcher matcher = RELEASE_TAG.matcher(json);
+                        if (matcher.find()) {
+                            String latest = matcher.group(1);
+                            String asset = "\\\"name\\\"\\s*:\\s*\\\"BeefMC-" + Pattern.quote(minecraft) + "-" + Pattern.quote(latest) + "\\.jar\\\"";
+                            String checksum = asset.substring(0, asset.length() - 2) + "\\.sha256\\\"";
+                            if (Pattern.compile(asset).matcher(json).find() && Pattern.compile(checksum).matcher(json).find()) {
+                                result = current.isEmpty() ? "latest:" + latest
+                                    : compareBeefMCReleaseTags(latest, current) > 0 ? "available:" + latest : "current:" + current;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    result = "unavailable";
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
+                }
+            }
+            List<CommandSender> waiters;
+            synchronized (VersionCommand.class) {
+                BEEFMC_RELEASE_STATUS = result;
+                beefmcReleaseCheckedAt = System.currentTimeMillis();
+                beefmcReleaseCheckStarted = false;
+                waiters = new ArrayList<CommandSender>(BEEFMC_RELEASE_WAITERS);
+                BEEFMC_RELEASE_WAITERS.clear();
+            }
+            for (CommandSender waiter : waiters) {
+                sendBeefMCReleaseStatus(waiter, result);
+            }
+        }, "BeefMC-release-check");
+        checker.setDaemon(true);
+        checker.start();
+    }
+
+    private static void sendBeefMCReleaseStatus(CommandSender sender, String status) {
+        if (status.startsWith("available:")) {
+            sender.sendMessage("BeefMC update " + status.substring("available:".length())
+                + " is available for Minecraft " + System.getProperty("beefmc.minecraft.version", "unknown")
+                + "." + beefmcUpdateInstallationMessage());
+        } else if (status.startsWith("current:")) {
+            sender.sendMessage("BeefMC is up to date (" + status.substring("current:".length()) + ").");
+        } else if (status.startsWith("latest:")) {
+            String message = "Latest stable BeefMC release is " + status.substring("latest:".length()) + ". Current JAR version is unknown";
+            if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+                message += "; use BeefMC-Launcher.jar to compare and install it at startup.";
+            } else if (!Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))) {
+                message += "; automatic updates are disabled for this server.";
+            } else {
+                message += "; launcher will compare and install it at next startup.";
+            }
+            sender.sendMessage(message);
+        } else {
+            sender.sendMessage("BeefMC release check unavailable. The launcher will retry at next startup.");
+        }
+    }
+
+    private static String beefmcUpdateInstallationMessage() {
+        if (!Boolean.parseBoolean(System.getProperty("beefmc.launcher", "false"))) {
+            return " Use BeefMC-Launcher.jar to install updates automatically.";
+        }
+        return Boolean.parseBoolean(System.getProperty("beefmc.auto-update", "true"))
+            ? " It will install at the next launcher start."
+            : " Automatic updates are disabled for this server.";
+    }
+
+    private static int compareBeefMCReleaseTags(String first, String second) {
+        int[] left = parseBeefMCReleaseTag(first);
+        int[] right = parseBeefMCReleaseTag(second);
+        if (left == null || right == null) {
+            return left == null ? (right == null ? 0 : -1) : 1;
+        }
+        for (int index = 0; index < left.length; index++) {
+            int compare = Integer.compare(left[index], right[index]);
+            if (compare != 0) {
+                return compare;
+            }
+        }
+        return 0;
+    }
+
+    private static int[] parseBeefMCReleaseTag(String tag) {
+        if (tag == null || !tag.matches("v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)")) {
+            return null;
+        }
+        try {
+            String[] parts = tag.substring(1).split("\\.");
+            return new int[] { Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]) };
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+'''
+    content = content.replace(import_anchor, import_anchor + imports)
+    content = content.replace(class_anchor, class_anchor + fields)
+    content = content.replace(execute_anchor, "            checkBeefMCReleaseAsync(sender);\n" + execute_anchor)
+    content = content.replace(helper_anchor, helpers + "\n" + helper_anchor)
+    return content, marker in content
+
 def _replace_leaf_permission_root(content: str) -> tuple[str, bool]:
     original = content
     content = content.replace('LEAF_ROOT = "leaf"', 'LEAF_ROOT = "beefmc"')
@@ -329,6 +693,8 @@ def _source_files(source_root: Path) -> list[Path]:
         "LeafGlobalConfig.java",
         "LeafCommand.java",
         "LeafCommands.java",
+        "VersionCommand.java",
+        "PaperVersionCommand.java",
         "ReloadCommand.java",
         "AsyncPathProcessor.java",
         "AsyncPlayerDataSaving.java",
@@ -401,11 +767,17 @@ def apply_rebrand(source_root: Path, version: str, family: str) -> list[Change]:
             '"beefmc/"' in content,
         ),
     }
+    legacy_transforms = {
+        "VersionCommand.java": _replace_beefmc_legacy_version_command,
+    }
     changes: list[Change] = []
     brand_markers = 0
     for path in _source_files(source_root):
         original = path.read_text(encoding="utf-8")
-        transform = leaf_transforms.get(path.name) if family == "modern" else None
+        if path.name in {"VersionCommand.java", "PaperVersionCommand.java"}:
+            transform = _replace_beefmc_version_command if family == "modern" else legacy_transforms.get(path.name)
+        else:
+            transform = leaf_transforms.get(path.name) if family == "modern" else None
         transform = transform or transforms.get(path.name)
         if transform is None:
             continue

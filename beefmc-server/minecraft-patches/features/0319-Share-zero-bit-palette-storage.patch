@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BeefMC Contributors <contact@beefmc.org>
+Date: Sat, 14 Nov 2026 13:09:41 GMT
+Subject: [PATCH] Share zero-bit palette storage
+
+
+diff --git a/net/minecraft/world/level/chunk/PalettedContainer.java b/net/minecraft/world/level/chunk/PalettedContainer.java
+index ca997ef..2fd84b7 100644
+--- a/net/minecraft/world/level/chunk/PalettedContainer.java
++++ b/net/minecraft/world/level/chunk/PalettedContainer.java
+@@ -24,6 +24,16 @@ import org.jspecify.annotations.Nullable;
+ 
+ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainerRO<T> {
+     private static final int MIN_PALETTE_BITS = 0;
++    private static final ZeroBitStorage EMPTY_SECTION_STORAGE = new ZeroBitStorage(4096);
++    private static final ZeroBitStorage EMPTY_BIOME_STORAGE = new ZeroBitStorage(64);
++
++    private static ZeroBitStorage zeroStorage(int size) {
++        return switch (size) {
++            case 4096 -> EMPTY_SECTION_STORAGE;
++            case 64 -> EMPTY_BIOME_STORAGE;
++            default -> new ZeroBitStorage(size);
++        };
++    }
+     public volatile PalettedContainer.Data<T> data; // Paper - optimise collisions - public
+     public final Strategy<T> strategy; // Paper - optimise chunk generation - public
+     private final T @Nullable [] presetValues; // Paper - Anti-Xray - Add preset values
+@@ -160,7 +170,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+         }
+ 
+         BitStorage storage = dataConfiguration.bitsInMemory() == 0
+-            ? new ZeroBitStorage(this.strategy.entryCount())
++            ? zeroStorage(this.strategy.entryCount())
+             : new SimpleBitStorage(dataConfiguration.bitsInMemory(), this.strategy.entryCount());
+         Palette<T> palette = dataConfiguration.createPalette(this.strategy, List.of());
+         return new PalettedContainer.Data<>(dataConfiguration, storage, palette);
+@@ -320,7 +330,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+         Palette<T> palette;
+         if (storedConfiguration.bitsInMemory() == 0) {
+             palette = storedConfiguration.createPalette(strategy, paletteEntries);
+-            storage = new ZeroBitStorage(entryCount);
++            storage = zeroStorage(entryCount);
+         } else {
+             Optional<LongStream> dataOpt = discData.storage();
+             if (dataOpt.isEmpty()) {
+@@ -356,7 +366,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+     private static final boolean DEBUG_PACKING = false;
+     private static <T> void validate(List<T> palette, long[] data, int bits,
+                                      BitStorage againstStorage, Palette<T> againstPalette) {
+-        BitStorage storage = data == null ? new ZeroBitStorage(againstStorage.getSize()) :
++        BitStorage storage = data == null ? zeroStorage(againstStorage.getSize()) :
+             new SimpleBitStorage(bits, againstStorage.getSize(), data);
+ 
+         for (int i = 0; i < storage.getSize(); ++i) {

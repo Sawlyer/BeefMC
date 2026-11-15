@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 11:04:56 +0100
+Subject: [PATCH] Cache End island heights
+
+
+diff --git a/net/minecraft/world/level/levelgen/densityfunction/generator/EndIslandFunction.java b/net/minecraft/world/level/levelgen/densityfunction/generator/EndIslandFunction.java
+index 2bdc138f0e34793fec010edcbb35936ed6a50d0f..8535cce2210f5f1759db958c23f3124c05c9f6d0 100644
+--- a/net/minecraft/world/level/levelgen/densityfunction/generator/EndIslandFunction.java
++++ b/net/minecraft/world/level/levelgen/densityfunction/generator/EndIslandFunction.java
+@@ -16,12 +16,38 @@ public record EndIslandFunction() implements DensityFunction {
+     public static final MapCodec<EndIslandFunction> CODEC = MapCodec.unit(new EndIslandFunction());
+     private static final float ISLAND_THRESHOLD = -0.9F;
+ 
++    private static final ThreadLocal<java.util.Map<SimplexNoise, HeightCache>> HEIGHT_CACHES =
++        ThreadLocal.withInitial(java.util.WeakHashMap::new);
++
++    private static final class HeightCache {
++        private static final int SIZE = 512;
++        private final long[] keys = new long[SIZE];
++        private final float[] values = new float[SIZE];
++        private boolean voidRings;
++
++        private HeightCache() {
++            java.util.Arrays.fill(this.keys, Long.MIN_VALUE);
++        }
++    }
++
+     private static float getHeightValue(final SimplexNoise islandNoise, final int sectionX, final int sectionZ) {
++        HeightCache cache = HEIGHT_CACHES.get().computeIfAbsent(islandNoise, ignored -> new HeightCache());
++        boolean voidRings = org.purpurmc.purpur.PurpurConfig.generateEndVoidRings;
++        if (voidRings != cache.voidRings) {
++            java.util.Arrays.fill(cache.keys, Long.MIN_VALUE);
++            cache.voidRings = voidRings;
++        }
++        long key = net.minecraft.world.level.ChunkPos.pack(sectionX, sectionZ);
++        int index = (int) it.unimi.dsi.fastutil.HashCommon.mix(key) & (HeightCache.SIZE - 1);
++        if (cache.keys[index] == key) {
++            return cache.values[index];
++        }
++
+         int chunkX = sectionX / 2;
+         int chunkZ = sectionZ / 2;
+         int subSectionX = sectionX % 2;
+         int subSectionZ = sectionZ % 2;
+-        float doffs = org.purpurmc.purpur.PurpurConfig.generateEndVoidRings ? net.minecraft.util.Mth.clamp(100.0F - net.minecraft.util.Mth.sqrt(sectionX * sectionX + sectionZ * sectionZ) * 8.0F, -100.0F, 80.0F) : -100.0F; // Purpur - Setting to reintroduce end void rings
++        float doffs = voidRings ? net.minecraft.util.Mth.clamp(100.0F - net.minecraft.util.Mth.sqrt(sectionX * sectionX + sectionZ * sectionZ) * 8.0F, -100.0F, 80.0F) : -100.0F; // Purpur - Setting to reintroduce end void rings
+ 
+         for (int xo = -12; xo <= 12; xo++) {
+             for (int zo = -12; zo <= 12; zo++) {
+@@ -38,6 +64,8 @@ public record EndIslandFunction() implements DensityFunction {
+             }
+         }
+ 
++        cache.keys[index] = key;
++        cache.values[index] = doffs;
+         return doffs;
+     }
+ 

@@ -2,6 +2,21 @@
 
 This record summarizes measured results by release. Results apply only to the listed Minecraft version and workload. No result here establishes a general CPU or memory gain across servers.
 
+## Unreleased — End island height cache
+
+Minecraft 1.21.11 caches completed island-height samples per thread and simplex sampler. Each active sampler uses a 512-entry height table, about 6 KiB plus array headers. Exact coordinate keys separate samples, and changes to the far-End terrain setting invalidate the height keys.
+
+Four alternating pairs on Windows 11, Ryzen 9 9950X, Java 21.0.12.1 and a 512–2816 MiB heap compared builds based on the same server source. Each fresh world used seed 7402981 and four 256-chunk squares in the outer End. No plugins or bots. The server force-loaded each square until every target chunk was entity-ticking with entities loaded.
+
+- Mean total readiness fell from 2.707 to 2.543 s (6.1%). Three pairs were faster. Excluding the first square, readiness was 1.532 versus 1.524 s.
+- Mean process CPU fell from 29.07 to 26.91 ms per requested chunk (7.4%). All four pairs used less CPU. CPU includes dependency chunks and other server work inside the measurement window.
+- Mean sampled peak process working set was 1,618 versus 1,670 MiB (+3.2%), with mixed paired results. The test did not establish a memory saving.
+- A separate JFR pair showed 31–35% lower median noise-stage duration across all four squares. JFR timings were collected separately from the readiness comparisons.
+
+The real height function returned identical bits for 98,304 samples over four seeds, signed coordinates, repeated lookups and changes to the far-End terrain setting. Saved block differences in five of 1,024 chunks also occurred between two baseline runs and involved chorus generation and its heightmaps. Biomes and structure data matched. No public API, configuration key or world format changed.
+
+Raw runs: `Test Server/worldgen-qualify-end-height-cache-1794736349` and `Test Server/worldgen-jfr-end-height-1794736813`.
+
 ## Unreleased — compact chunk section storage
 
 Random-tick position indexes now allocate their reverse lookup on first use. Uniform block-state and biome palettes reuse immutable zero-bit storage for their standard sizes. The random-tick order, palette format, anti-xray presets, and server configuration are unchanged.

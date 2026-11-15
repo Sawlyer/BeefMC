@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maxime Chaffraix <160416029+Sawlyer@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 11:01:39 +0100
+Subject: [PATCH] Cache End island heights
+
+
+diff --git a/net/minecraft/world/level/levelgen/DensityFunctions.java b/net/minecraft/world/level/levelgen/DensityFunctions.java
+index 138c3f7b871d64019613955547b5e770f7aec436..ddd584bc5398a1f17713e924d2fbd2d93976eb48 100644
+--- a/net/minecraft/world/level/levelgen/DensityFunctions.java
++++ b/net/minecraft/world/level/levelgen/DensityFunctions.java
+@@ -516,8 +516,13 @@ public final class DensityFunctions {
+         private static final class NoiseCache {
+             public long[] keys = new long[8192];
+             public float[] values = new float[8192];
++            private static final int HEIGHT_CACHE_SIZE = 512;
++            private final long[] heightKeys = new long[HEIGHT_CACHE_SIZE];
++            private final float[] heights = new float[HEIGHT_CACHE_SIZE];
++            private boolean fixFarEnd;
+             public NoiseCache() {
+                 java.util.Arrays.fill(keys, Long.MIN_VALUE);
++                java.util.Arrays.fill(this.heightKeys, Long.MIN_VALUE);
+             }
+         }
+         private static final ThreadLocal<java.util.Map<SimplexNoise, NoiseCache>> noiseCache = ThreadLocal.withInitial(java.util.WeakHashMap::new);
+@@ -530,14 +535,25 @@ public final class DensityFunctions {
+         }
+ 
+         private static float getHeightValue(SimplexNoise noise, int x, int z) {
++            NoiseCache cache = noiseCache.get().computeIfAbsent(noise, noiseKey -> new NoiseCache());
++            boolean fixFarEnd = io.papermc.paper.configuration.GlobalConfiguration.get().misc.fixFarEndTerrainGeneration;
++            if (cache.fixFarEnd != fixFarEnd) {
++                java.util.Arrays.fill(cache.heightKeys, Long.MIN_VALUE);
++                cache.fixFarEnd = fixFarEnd;
++            }
++            long heightKey = net.minecraft.world.level.ChunkPos.asLong(x, z);
++            int heightIndex = (int) it.unimi.dsi.fastutil.HashCommon.mix(heightKey) & (NoiseCache.HEIGHT_CACHE_SIZE - 1);
++            if (cache.heightKeys[heightIndex] == heightKey) {
++                return cache.heights[heightIndex];
++            }
++
+             int i = x / 2;
+             int i1 = z / 2;
+             int i2 = x % 2;
+             int i3 = z % 2;
+-            float f = 100.0F - (io.papermc.paper.configuration.GlobalConfiguration.get().misc.fixFarEndTerrainGeneration ? Mth.sqrt((long)x * (long)x + (long)z * (long)z) : Mth.sqrt(x * x + z * z)) * 8.0F; // Paper - cast ints to long when MC-159283 fix enabled
++            float f = 100.0F - (fixFarEnd ? Mth.sqrt((long)x * (long)x + (long)z * (long)z) : Mth.sqrt(x * x + z * z)) * 8.0F; // Paper - cast ints to long when MC-159283 fix enabled
+             f = Mth.clamp(f, -100.0F, 80.0F);
+ 
+-            NoiseCache cache = noiseCache.get().computeIfAbsent(noise, noiseKey -> new NoiseCache()); // Paper - Perf: Optimize end generation
+             for (int i4 = -12; i4 <= 12; i4++) {
+                 for (int i5 = -12; i5 <= 12; i5++) {
+                     long l = i + i4; final int chunkX = (int) l; // Paper - OBFHELPER
+@@ -568,6 +584,8 @@ public final class DensityFunctions {
+                 }
+             }
+ 
++            cache.heightKeys[heightIndex] = heightKey;
++            cache.heights[heightIndex] = f;
+             return f;
+         }
+ 

@@ -17,7 +17,7 @@ On 1.21.11, the height function returned identical bits for 98,304 samples over 
 
 Raw runs: `Test Server/worldgen-qualify-end-height-cache-1794736349` and `Test Server/worldgen-jfr-end-height-1794736813`.
 
-On 26.1.2, four matched End pairs used the same seed, coordinates and heap on Temurin 25.0.5. Mean readiness was 2.024 versus 1.899 s (6.2% lower, three pairs faster). CPU fell from 25.31 to 22.54 ms per requested chunk (10.9%) and was lower in all four pairs. Sampled peak working set rose from 1,394 to 1,495 MiB (7.2%), higher in every pair. Raw runs: `Test Server/worldgen-end-port-26.1.2-1794737230`.
+On 26.1.2, four matched End pairs used the same seed, coordinates and heap on Temurin 25.0.5. Mean readiness was 2.024 versus 1.899 s (6.2% lower, three pairs faster). CPU fell from 25.31 to 22.54 ms per requested chunk (10.9%) and was lower in all four pairs. Sampled peak working set rose from 1,394 to 1,495 MiB (7.2%), higher in every pair. The same 98,304 height samples matched bit for bit. Saved-world differences involved chorus blocks and their heightmaps, also observed between two reference runs. Raw runs: `Test Server/worldgen-end-port-26.1.2-1794737230`.
 
 The 26.3 prototype used the version's separate End density sampler. Four paired runs averaged 1.625 versus 1.653 s (+1.7%), and 17.81 versus 17.92 CPU ms per requested chunk (+0.6%). Sampled peak working set changed from 1,541 to 1,491 MiB with mixed pairs. The prototype stays out of v0.0.7. Raw runs: `Test Server/worldgen-end-port-26.3-1794737230`.
 

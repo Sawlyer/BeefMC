@@ -2,6 +2,27 @@
 
 This record summarizes measured results by release. Results apply only to the listed Minecraft version and workload. No result here establishes a general CPU or memory gain across servers.
 
+## BeefMC v0.0.7
+
+Minecraft 1.21.11 and 26.1.2 cache completed island-height samples per thread and simplex sampler. Each active sampler uses a 512-entry height table, about 6 KiB plus array headers. Exact coordinate keys separate samples, and changes to the relevant far-End terrain setting invalidate the height keys.
+
+On Minecraft 1.21.11, four alternating pairs on Windows 11, Ryzen 9 9950X, Java 21.0.12.1 and a 512–2816 MiB heap compared builds based on the same server source. Each fresh world used seed 7402981 and four 256-chunk squares in the outer End. No plugins or bots. The server force-loaded each square until every target chunk was entity-ticking with entities loaded.
+
+- Mean total readiness fell from 2.707 to 2.543 s (6.1%). Three pairs were faster. Excluding the first square, readiness was 1.532 versus 1.524 s.
+- Mean process CPU fell from 29.07 to 26.91 ms per requested chunk (7.4%). All four pairs used less CPU. CPU includes dependency chunks and other server work inside the measurement window.
+- Mean sampled peak process working set was 1,618 versus 1,670 MiB (+3.2%), with mixed paired results. The test did not establish a memory saving.
+- A separate JFR pair showed 31–35% lower median noise-stage duration across all four squares. JFR timings were collected separately from the readiness comparisons.
+
+On 1.21.11, the height function returned identical bits for 98,304 samples over four seeds, signed coordinates, repeat lookups and changes to the far-End terrain setting. Saved block differences in five of 1,024 chunks also occurred between two baseline runs and involved chorus generation and its heightmaps. Biomes and structure data matched. No public API, configuration key or world format changed.
+
+Raw runs: `Test Server/worldgen-qualify-end-height-cache-1794736349` and `Test Server/worldgen-jfr-end-height-1794736813`.
+
+On 26.1.2, four matched End pairs used the same seed, coordinates and heap on Temurin 25.0.5. Mean readiness was 2.024 versus 1.899 s (6.2% lower, three pairs faster). CPU fell from 25.31 to 22.54 ms per requested chunk (10.9%) and was lower in all four pairs. Sampled peak working set rose from 1,394 to 1,495 MiB (7.2%), higher in every pair. The same 98,304 height samples matched bit for bit. Saved-world differences involved chorus blocks and their heightmaps, also observed between two reference runs. Raw runs: `Test Server/worldgen-end-port-26.1.2-1794737230`.
+
+The 26.3 prototype used the version's separate End density sampler. Four paired runs averaged 1.625 versus 1.653 s (+1.7%), and 17.81 versus 17.92 CPU ms per requested chunk (+0.6%). Sampled peak working set changed from 1,541 to 1,491 MiB with mixed pairs. The prototype stays out of v0.0.7. Raw runs: `Test Server/worldgen-end-port-26.3-1794737230`.
+
+Minecraft 1.8.8 has no matching End island generator.
+
 ## BeefMC v0.0.6
 
 Random-tick position indexes now allocate their reverse lookup on first use. Uniform block-state and biome palettes reuse immutable zero-bit storage for their standard sizes. The random-tick order, palette format, anti-xray presets, and server configuration are unchanged.

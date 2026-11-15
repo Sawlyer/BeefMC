@@ -18,15 +18,15 @@ Plugin, proxy, and production-network compatibility have not been validated. Bui
 
 New configurations use a view distance of 4 chunks. Minecraft 1.21.11, 26.1.2 and 26.3 also default to a simulation distance of 4 chunks. Existing values in `server.properties` are preserved. Lower distances can affect visibility and the activity of distant farms.
 
-Run a release JAR with `sh start-beefmc.sh SERVER.jar` or `start-beefmc.cmd SERVER.jar` from the server directory. Set `BEEFMC_MINECRAFT_VERSION` to the matching version before launch. Starting with the next release, release bundles will include `BeefMC-Launcher.jar`; automatic updates will be enabled by default and install before the next server start. Earlier releases do not include the launcher. Set `auto-update=false` in `beefmc-updater.properties` to disable updates for one server. The [automatic update guide](docs/operations/automatic-updates.md) covers setup and rollback. Direct `java -jar SERVER.jar` startup cannot install updates. The [launch scripts](scripts/launch) use an initial Java heap of 512 MiB and a maximum of 3 GiB. Set `BEEFMC_XMS` or `BEEFMC_XMX` to override those values. Use Java 8 for 1.8.8, Java 21 for 1.21.11, and Java 25 for 26.1.2 and 26.3.
+Run a release JAR with `sh start-beefmc.sh SERVER.jar` or `start-beefmc.cmd SERVER.jar` from the server directory. Set `BEEFMC_MINECRAFT_VERSION` to the matching version before launch. Starting with v0.0.7, releases include `BeefMC-Launcher.jar`. The launcher installs updates by default before the next server start. Set `auto-update=false` in `beefmc-updater.properties` to disable updates for one server. The [automatic update guide](docs/operations/automatic-updates.md) covers setup and rollback. Direct `java -jar SERVER.jar` startup cannot install updates. The [launch scripts](scripts/launch) use an initial Java heap of 512 MiB and a maximum of 3 GiB. Set `BEEFMC_XMS` or `BEEFMC_XMX` to override those values. Use Java 8 for 1.8.8, Java 21 for 1.21.11, and Java 25 for 26.1.2 and 26.3.
 
 On Java 25, set `BEEFMC_PROFILE=compact` to enable compact object headers and a 2944 MiB default heap cap. Use this optional profile on modern versions with a JVM that supports the flag. The measurements cover 1.21.11 on Temurin 25.0.5. The standard profile remains the default.
 
 ## Releases
 
-Latest release: [BeefMC v0.0.6](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.6). Each release builds one server JAR and SHA-256 checksum for Minecraft 1.8.8, 1.21.11, 26.1.2, and 26.3.
+Latest release: [BeefMC v0.0.7](https://github.com/Sawlyer/BeefMC/releases/tag/v0.0.7). Includes server JARs for Minecraft 1.8.8, 1.21.11, 26.1.2 and 26.3, plus the automatic update launcher. Each JAR has a SHA-256 checksum.
 
-v0.0.6 reduces chunk section storage overhead on 1.21.11, 26.1.2, and 26.3. In a 1.21.11 test with 40 bots and the same 2816 MiB heap cap, CPU usage fell by about 33% and post-GC heap occupancy by about 283 MiB. Resident memory varied. See [the benchmark details](PERFORMANCE.md#beefmc-v006).
+v0.0.7 caches End island heights on Minecraft 1.21.11 and 26.1.2. In four paired 1.21.11 runs, fresh End chunks became playable 6.1% faster on average and process CPU per requested chunk fell 7.4%. Mean sampled peak working set rose 3.2%. See the [benchmark details](PERFORMANCE.md#beefmc-v007).
 
 ## Contributing and building
 
